@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Chunk, Scenario, LearningStep, DailyMission, Track, TrackId } from '@/types';
 
 interface LearningState {
@@ -43,95 +44,126 @@ interface LearningState {
   resetDailyProgress: () => void;
 }
 
-export const useLearningStore = create<LearningState>((set, get) => ({
-  tracks: [],
-  currentTrack: null,
-  dailyMission: null,
-  currentStep: 'warmup',
-  currentChunks: [],
-  currentChunkIndex: 0,
-  reviewChunks: [],
-  currentScenario: null,
-  sessionStartTime: null,
-  chunksLearnedToday: 0,
-  chunksReviewedToday: 0,
-
-  setTracks: (tracks) => set({ tracks }),
-
-  setCurrentTrack: (track) => set({ currentTrack: track }),
-
-  setDailyMission: (mission) => set({ dailyMission: mission }),
-
-  setCurrentStep: (step) => set({ currentStep: step }),
-
-  setCurrentChunks: (chunks) => set({ currentChunks: chunks, currentChunkIndex: 0 }),
-
-  nextChunk: () => {
-    const { currentChunkIndex, currentChunks } = get();
-    if (currentChunkIndex < currentChunks.length - 1) {
-      set({ currentChunkIndex: currentChunkIndex + 1 });
-    }
-  },
-
-  previousChunk: () => {
-    const { currentChunkIndex } = get();
-    if (currentChunkIndex > 0) {
-      set({ currentChunkIndex: currentChunkIndex - 1 });
-    }
-  },
-
-  setReviewChunks: (chunks) => set({ reviewChunks: chunks }),
-
-  setCurrentScenario: (scenario) => set({ currentScenario: scenario }),
-
-  startSession: () => set({ sessionStartTime: Date.now() }),
-
-  endSession: () => {
-    const { sessionStartTime, chunksLearnedToday, chunksReviewedToday } = get();
-    const duration = sessionStartTime
-      ? Math.round((Date.now() - sessionStartTime) / 60000)
-      : 0;
-
-    set({ sessionStartTime: null });
-
-    return {
-      duration,
-      chunksLearned: chunksLearnedToday,
-      chunksReviewed: chunksReviewedToday,
-    };
-  },
-
-  incrementChunksLearned: () =>
-    set((state) => ({ chunksLearnedToday: state.chunksLearnedToday + 1 })),
-
-  incrementChunksReviewed: () =>
-    set((state) => ({ chunksReviewedToday: state.chunksReviewedToday + 1 })),
-
-  completeStep: (step) => {
-    const { dailyMission } = get();
-    if (dailyMission) {
-      set({
-        dailyMission: {
-          ...dailyMission,
-          progress: {
-            ...dailyMission.progress,
-            [step]: true,
-          },
-        },
-      });
-    }
-  },
-
-  resetDailyProgress: () =>
-    set({
+export const useLearningStore = create<LearningState>()(
+  persist(
+    (set, get) => ({
+      tracks: [],
+      currentTrack: null,
+      dailyMission: null,
+      currentStep: 'warmup',
+      currentChunks: [],
+      currentChunkIndex: 0,
+      reviewChunks: [],
+      currentScenario: null,
+      sessionStartTime: null,
       chunksLearnedToday: 0,
       chunksReviewedToday: 0,
-      currentStep: 'warmup',
+
+      setTracks: (tracks) => set({ tracks }),
+
+      setCurrentTrack: (track) => set({ currentTrack: track }),
+
+      setDailyMission: (mission) => set({ dailyMission: mission }),
+
+      setCurrentStep: (step) => set({ currentStep: step }),
+
+      setCurrentChunks: (chunks) => set({ currentChunks: chunks, currentChunkIndex: 0 }),
+
+      nextChunk: () => {
+        const { currentChunkIndex, currentChunks } = get();
+        if (currentChunkIndex < currentChunks.length - 1) {
+          set({ currentChunkIndex: currentChunkIndex + 1 });
+        }
+      },
+
+      previousChunk: () => {
+        const { currentChunkIndex } = get();
+        if (currentChunkIndex > 0) {
+          set({ currentChunkIndex: currentChunkIndex - 1 });
+        }
+      },
+
+      setReviewChunks: (chunks) => set({ reviewChunks: chunks }),
+
+      setCurrentScenario: (scenario) => set({ currentScenario: scenario }),
+
+      startSession: () => set({ sessionStartTime: Date.now() }),
+
+      endSession: () => {
+        const { sessionStartTime, chunksLearnedToday, chunksReviewedToday } = get();
+        const duration = sessionStartTime
+          ? Math.round((Date.now() - sessionStartTime) / 60000)
+          : 0;
+
+        set({ sessionStartTime: null });
+
+        return {
+          duration,
+          chunksLearned: chunksLearnedToday,
+          chunksReviewed: chunksReviewedToday,
+        };
+      },
+
+      incrementChunksLearned: () =>
+        set((state) => ({ chunksLearnedToday: state.chunksLearnedToday + 1 })),
+
+      incrementChunksReviewed: () =>
+        set((state) => ({ chunksReviewedToday: state.chunksReviewedToday + 1 })),
+
+      completeStep: (step) => {
+        const { dailyMission } = get();
+        if (dailyMission) {
+          set({
+            dailyMission: {
+              ...dailyMission,
+              progress: {
+                ...dailyMission.progress,
+                [step]: true,
+              },
+            },
+          });
+        }
+      },
+
+      resetDailyProgress: () =>
+        set({
+          chunksLearnedToday: 0,
+          chunksReviewedToday: 0,
+          currentStep: 'warmup',
+        }),
     }),
-}));
+    {
+      name: 'speakflow-learning',
+      partialize: (state) => ({
+        currentTrack: state.currentTrack,
+        chunksLearnedToday: state.chunksLearnedToday,
+        chunksReviewedToday: state.chunksReviewedToday,
+      }),
+    }
+  )
+);
 
 // 트랙 데이터 (초기 데이터)
 export const TRACKS: Track[] = [
+  // 가족 공용 - 기본 생활 영어
+  {
+    id: 'daily-life' as TrackId,
+    name: '생활 영어',
+    description: '일상에서 바로 쓰는 기본 회화',
+    icon: '🏠',
+    total_weeks: 12,
+    color: '#10B981',
+  },
+  // 뷰티 디바이스 비즈니스 (아내용)
+  {
+    id: 'beauty-tech' as TrackId,
+    name: 'Beauty Tech Biz',
+    description: '뷰티 디바이스 소개, 바이어 미팅, 전시회 영업',
+    icon: '✨',
+    total_weeks: 12,
+    color: '#EC4899',
+  },
+  // 일반 비즈니스
   {
     id: 'business' as TrackId,
     name: 'Business',
@@ -140,36 +172,31 @@ export const TRACKS: Track[] = [
     total_weeks: 12,
     color: '#3B82F6',
   },
-  {
-    id: 'beauty-tech' as TrackId,
-    name: 'Beauty Tech Biz',
-    description: '뷰티 디바이스, 바이어 미팅, 전시회',
-    icon: '✨',
-    total_weeks: 12,
-    color: '#EC4899',
-  },
+  // 학생/학술용 (공인영어 + 대학원 준비)
   {
     id: 'academic' as TrackId,
-    name: 'Academic',
-    description: '학술 발표, Q&A, 학회 네트워킹',
+    name: 'Academic English',
+    description: 'TOEFL/IELTS 스피킹, 박사 인터뷰, 학술 발표',
     icon: '🎓',
-    total_weeks: 12,
+    total_weeks: 16,
     color: '#8B5CF6',
   },
+  // 여행 영어
   {
-    id: 'design' as TrackId,
-    name: 'Design Biz',
-    description: '디자인 PT, 클라이언트 소통',
-    icon: '🎨',
-    total_weeks: 12,
+    id: 'travel' as TrackId,
+    name: 'Travel',
+    description: '여행, 공항, 호텔, 관광지 회화',
+    icon: '✈️',
+    total_weeks: 8,
     color: '#F59E0B',
   },
+  // 키즈 영어
   {
-    id: 'beauty' as TrackId,
-    name: 'Beauty Biz',
-    description: '브랜드 PT, 마케팅, 트렌드 리포트',
-    icon: '💄',
+    id: 'kids' as TrackId,
+    name: 'Kids English',
+    description: '아이들을 위한 기초 영어 표현',
+    icon: '🧒',
     total_weeks: 12,
-    color: '#EF4444',
+    color: '#06B6D4',
   },
 ];

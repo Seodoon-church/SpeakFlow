@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['favicon.svg'],
       manifest: {
         name: 'SpeakFlow - 영어회화 학습',
         short_name: 'SpeakFlow',
@@ -22,19 +22,19 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: '/icons/icon-192x192.png',
+            src: '/icons/icon-192x192.svg',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/svg+xml'
           },
           {
-            src: '/icons/icon-512x512.png',
+            src: '/icons/icon-192x192.svg',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/svg+xml'
           },
           {
-            src: '/icons/icon-512x512.png',
+            src: '/icons/icon-192x192.svg',
             sizes: '512x512',
-            type: 'image/png',
+            type: 'image/svg+xml',
             purpose: 'any maskable'
           }
         ]

@@ -152,17 +152,20 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* 가족 그룹 */}
+      {/* 가족 관리 */}
       <section className="px-4 mb-6">
         <h3 className="text-sm font-semibold text-gray-500 mb-2 px-1">가족</h3>
         <div className="card">
-          <button className="w-full flex items-center justify-between py-3">
+          <button
+            onClick={() => navigate('/family')}
+            className="w-full flex items-center justify-between py-3"
+          >
             <div className="flex items-center gap-3">
               <Users className="w-5 h-5 text-gray-400" />
-              <span className="text-foreground">가족 그룹</span>
+              <span className="text-foreground">가족 구성원 관리</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">미가입</span>
+              <span className="text-sm text-primary-500">각자 학습하기</span>
               <ChevronRight className="w-5 h-5 text-gray-300" />
             </div>
           </button>

@@ -12,7 +12,7 @@ export interface User {
 }
 
 // 학습 트랙 타입
-export type TrackId = 'business' | 'beauty-tech' | 'academic' | 'design' | 'beauty';
+export type TrackId = 'daily-life' | 'beauty-tech' | 'business' | 'academic' | 'travel' | 'kids';
 
 export interface Track {
   id: TrackId;

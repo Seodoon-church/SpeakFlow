@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Layout } from '@/components/common';
+import { Layout, Toast } from '@/components/common';
 import {
+  LandingPage,
   HomePage,
   LoginPage,
   OnboardingPage,
@@ -9,14 +10,14 @@ import {
   RoleplayPage,
   StatsPage,
   SettingsPage,
+  FamilyPage,
 } from '@/pages';
 import { useAuthStore } from '@/stores';
 import { supabase } from '@/lib/supabase';
 
 // 인증이 필요한 라우트를 위한 래퍼
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isLoading } = useAuthStore();
-  // 실제 배포 시 사용: const { isAuthenticated, isOnboarded, isLoading } = useAuthStore();
+  const { isAuthenticated, isLoading } = useAuthStore();
 
   if (isLoading) {
     return (
@@ -29,15 +30,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // 개발 모드에서는 인증 없이 접근 가능하도록 임시 처리
-  // 실제 배포 시에는 아래 주석을 해제하세요
-  // if (!isAuthenticated) {
-  //   return <Navigate to="/login" replace />;
-  // }
-
-  // if (!isOnboarded) {
-  //   return <Navigate to="/onboarding" replace />;
-  // }
+  if (!isAuthenticated) {
+    return <Navigate to="/welcome" replace />;
+  }
 
   return <>{children}</>;
 }
@@ -97,8 +92,10 @@ function App() {
 
   return (
     <BrowserRouter>
+      <Toast />
       <Routes>
         {/* 공개 라우트 */}
+        <Route path="/welcome" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
 
@@ -113,6 +110,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/family" element={<FamilyPage />} />
         </Route>
 
         {/* 인증 필요 라우트 (레이아웃 없음) */}

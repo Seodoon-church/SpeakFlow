@@ -1,0 +1,519 @@
+// 트랙별 롤플레이 시나리오
+import type { TrackId } from '@/types';
+
+export interface Scenario {
+  id: string;
+  trackId: TrackId;
+  title: string;
+  description: string;
+  situation: string;
+  aiRole: string;
+  userRole: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  targetExpressions: string[];
+}
+
+// 생활 영어 시나리오
+export const DAILY_LIFE_SCENARIOS: Scenario[] = [
+  {
+    id: 'dl-cafe',
+    trackId: 'daily-life',
+    title: '카페에서 주문하기',
+    description: '카페에서 음료와 간식을 주문합니다.',
+    situation: '동네 카페에 들어왔습니다. 메뉴를 보고 원하는 음료와 디저트를 주문해 보세요.',
+    aiRole: '카페 직원 (바리스타)',
+    userRole: '손님',
+    difficulty: 'beginner',
+    targetExpressions: [
+      "Can I get a...",
+      "I'll have...",
+      "For here or to go?",
+    ],
+  },
+  {
+    id: 'dl-restaurant',
+    trackId: 'daily-life',
+    title: '레스토랑에서 식사하기',
+    description: '레스토랑에서 테이블 예약부터 계산까지.',
+    situation: '가족과 함께 레스토랑에 왔습니다. 자리를 안내받고, 메뉴를 주문하고, 계산까지 해보세요.',
+    aiRole: '레스토랑 서버',
+    userRole: '손님',
+    difficulty: 'beginner',
+    targetExpressions: [
+      "A table for..., please.",
+      "What do you recommend?",
+      "Could I get the check?",
+    ],
+  },
+  {
+    id: 'dl-shopping',
+    trackId: 'daily-life',
+    title: '옷 가게에서 쇼핑하기',
+    description: '옷가게에서 원하는 옷을 찾고 구매합니다.',
+    situation: '백화점 옷가게에서 쇼핑 중입니다. 마음에 드는 옷을 찾아 사이즈와 색상을 확인하고 구매해 보세요.',
+    aiRole: '매장 직원',
+    userRole: '쇼핑객',
+    difficulty: 'beginner',
+    targetExpressions: [
+      "Do you have this in...",
+      "Can I try this on?",
+      "How much is this?",
+    ],
+  },
+  {
+    id: 'dl-directions',
+    trackId: 'daily-life',
+    title: '길 물어보기',
+    description: '낯선 곳에서 목적지까지 가는 길을 묻습니다.',
+    situation: '처음 방문한 도시에서 유명한 관광지를 찾고 있습니다. 지나가는 사람에게 길을 물어보세요.',
+    aiRole: '현지인',
+    userRole: '관광객',
+    difficulty: 'beginner',
+    targetExpressions: [
+      "Excuse me, how do I get to...?",
+      "Is it far from here?",
+      "Can you show me on the map?",
+    ],
+  },
+];
+
+// 뷰티 테크 비즈니스 시나리오
+export const BEAUTY_TECH_SCENARIOS: Scenario[] = [
+  {
+    id: 'bt-product-intro',
+    trackId: 'beauty-tech',
+    title: '신제품 프레젠테이션',
+    description: '해외 바이어에게 신제품을 소개합니다.',
+    situation: '중요한 해외 바이어가 회사를 방문했습니다. 새로 출시한 LED 마스크 디바이스의 특징과 효과를 설명해 주세요.',
+    aiRole: '해외 바이어 (화장품 유통업체 구매담당자)',
+    userRole: '영업/마케팅 담당자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "Let me introduce our latest...",
+      "The key feature is...",
+      "Clinical trials have shown...",
+    ],
+  },
+  {
+    id: 'bt-trade-show',
+    trackId: 'beauty-tech',
+    title: '뷰티 전시회 부스 운영',
+    description: '코스모프로프 같은 뷰티 전시회에서 방문객을 응대합니다.',
+    situation: 'Cosmoprof Asia 전시회에 참가 중입니다. 부스를 방문한 해외 바이어에게 제품을 소개하고 관심을 이끌어내세요.',
+    aiRole: '전시회 방문객 (잠재 바이어)',
+    userRole: '전시회 부스 담당자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "Would you like to try a demonstration?",
+      "What sets us apart is...",
+      "Feel free to take our brochure.",
+    ],
+  },
+  {
+    id: 'bt-price-negotiation',
+    trackId: 'beauty-tech',
+    title: '가격 및 계약 협상',
+    description: '바이어와 가격, 수량, 조건을 협상합니다.',
+    situation: '제품에 관심을 보인 바이어와 본격적인 비즈니스 협상을 진행합니다. MOQ, 가격, 독점권 등을 논의하세요.',
+    aiRole: '해외 바이어 (구매 결정권자)',
+    userRole: '영업 매니저',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "Our minimum order quantity is...",
+      "We can offer exclusive rights...",
+      "The wholesale price would be...",
+    ],
+  },
+  {
+    id: 'bt-follow-up',
+    trackId: 'beauty-tech',
+    title: '미팅 후 팔로업 콜',
+    description: '전시회에서 만난 바이어에게 후속 연락을 합니다.',
+    situation: '지난 주 전시회에서 명함을 교환한 바이어에게 팔로업 전화를 합니다. 관심사를 재확인하고 다음 단계를 제안하세요.',
+    aiRole: '해외 바이어',
+    userRole: '영업 담당자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "I'm following up on our meeting at...",
+      "I'd like to send you a detailed quote.",
+      "When would be a good time for a video call?",
+    ],
+  },
+  {
+    id: 'bt-complaint',
+    trackId: 'beauty-tech',
+    title: '고객 클레임 대응',
+    description: '제품 품질 관련 클레임에 대응합니다.',
+    situation: '해외 바이어로부터 배송된 제품에 대한 클레임 연락이 왔습니다. 상황을 파악하고 해결책을 제시하세요.',
+    aiRole: '불만을 제기하는 바이어',
+    userRole: '고객 서비스 담당자',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "I sincerely apologize for...",
+      "Let me look into this immediately.",
+      "We'll ship replacements right away.",
+    ],
+  },
+];
+
+// 일반 비즈니스 시나리오
+export const BUSINESS_SCENARIOS: Scenario[] = [
+  {
+    id: 'biz-meeting',
+    trackId: 'business',
+    title: '비즈니스 미팅 시작',
+    description: '새로운 프로젝트에 대해 팀원과 미팅을 시작합니다.',
+    situation: '당신은 프로젝트 매니저입니다. 팀원들과 새로운 마케팅 캠페인에 대해 논의하기 위한 미팅을 시작해야 합니다.',
+    aiRole: '팀원 (마케팅 전문가)',
+    userRole: '프로젝트 매니저',
+    difficulty: 'beginner',
+    targetExpressions: [
+      "Let's get started.",
+      "I'd like to go over...",
+      "What are your thoughts on...?",
+    ],
+  },
+  {
+    id: 'biz-update',
+    trackId: 'business',
+    title: '프로젝트 진행 상황 보고',
+    description: '상사에게 프로젝트 진행 상황을 보고합니다.',
+    situation: '분기별 프로젝트 리뷰 미팅입니다. 현재 진행 상황, 성과, 그리고 앞으로의 계획을 공유해야 합니다.',
+    aiRole: '팀장',
+    userRole: '프로젝트 담당자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "I'd like to update you on...",
+      "We've made significant progress in...",
+      "The next steps would be...",
+    ],
+  },
+  {
+    id: 'biz-email-followup',
+    trackId: 'business',
+    title: '이메일 후속 전화',
+    description: '보낸 이메일에 대한 후속 전화를 합니다.',
+    situation: '중요한 제안서를 이메일로 보냈지만 답변이 없습니다. 고객에게 후속 전화를 걸어 제안서 검토 여부를 확인하세요.',
+    aiRole: '고객사 담당자',
+    userRole: '영업 담당자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "I'm calling to follow up on...",
+      "Did you have a chance to review...?",
+      "Would you be available for a call...?",
+    ],
+  },
+  {
+    id: 'biz-presentation',
+    trackId: 'business',
+    title: '팀 프레젠테이션',
+    description: '팀에게 새로운 전략을 발표합니다.',
+    situation: '분기 전략 회의에서 새로운 사업 전략을 팀에게 발표합니다. 핵심 포인트를 설명하고 질문에 답하세요.',
+    aiRole: '팀원들 (질문자)',
+    userRole: '발표자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "Today, I'll be presenting...",
+      "As you can see from this chart...",
+      "To sum up...",
+    ],
+  },
+  {
+    id: 'biz-negotiation',
+    trackId: 'business',
+    title: '계약 조건 협상',
+    description: '공급업체와 계약 조건을 협상합니다.',
+    situation: '새로운 공급업체와 계약 조건을 협상합니다. 가격, 납기, 결제 조건 등을 논의하고 유리한 조건을 이끌어내세요.',
+    aiRole: '공급업체 영업 담당자',
+    userRole: '구매 담당자',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "We're looking for a win-win solution.",
+      "Would you be open to...?",
+      "Let me get back to you on that.",
+    ],
+  },
+  {
+    id: 'biz-video-call',
+    trackId: 'business',
+    title: '화상 회의 진행',
+    description: '해외 파트너와 화상 회의를 진행합니다.',
+    situation: '미국 본사 팀과 프로젝트 진행 상황을 논의하는 화상 회의입니다. 기술적 문제가 있을 수 있으니 대비하세요.',
+    aiRole: '미국 본사 팀원',
+    userRole: '한국 지사 담당자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "Can everyone hear me okay?",
+      "I'll share my screen now.",
+      "Let's take this offline.",
+    ],
+  },
+  {
+    id: 'biz-feedback',
+    trackId: 'business',
+    title: '팀원에게 피드백 주기',
+    description: '팀원의 업무에 대해 건설적인 피드백을 줍니다.',
+    situation: '팀원이 작성한 보고서에 몇 가지 수정이 필요합니다. 긍정적인 부분도 언급하면서 건설적인 피드백을 전달하세요.',
+    aiRole: '팀원 (주니어 직원)',
+    userRole: '팀 리더',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "Great job on...",
+      "I have some feedback on...",
+      "One thing to consider is...",
+    ],
+  },
+  {
+    id: 'biz-client-call',
+    trackId: 'business',
+    title: '고객 불만 대응',
+    description: '불만을 제기하는 고객에게 전화로 대응합니다.',
+    situation: '납기 지연에 대해 불만을 제기하는 고객입니다. 상황을 설명하고 해결책을 제시하여 고객을 안심시키세요.',
+    aiRole: '불만 고객',
+    userRole: '고객 서비스 담당자',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "I understand your frustration.",
+      "Let me look into this right away.",
+      "We'll make sure this doesn't happen again.",
+    ],
+  },
+  {
+    id: 'biz-networking',
+    trackId: 'business',
+    title: '비즈니스 네트워킹',
+    description: '업계 행사에서 새로운 사람과 네트워킹합니다.',
+    situation: '업계 컨퍼런스 리셉션에서 처음 보는 사람과 대화를 시작합니다. 자연스럽게 자기소개를 하고 비즈니스 관계를 형성하세요.',
+    aiRole: '다른 회사 직원',
+    userRole: '네트워킹 참석자',
+    difficulty: 'beginner',
+    targetExpressions: [
+      "What brings you here today?",
+      "What line of work are you in?",
+      "Let's keep in touch.",
+    ],
+  },
+  {
+    id: 'biz-job-interview',
+    trackId: 'business',
+    title: '영어 면접',
+    description: '외국계 회사 면접에서 자신을 소개합니다.',
+    situation: '글로벌 기업 면접입니다. 자기소개, 경력 소개, 지원 동기, 강점과 약점 등에 대해 답변하세요.',
+    aiRole: '면접관 (HR 매니저)',
+    userRole: '면접 지원자',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "I have X years of experience in...",
+      "My greatest strength is...",
+      "I'm excited about this opportunity because...",
+    ],
+  },
+];
+
+// 학술 영어 시나리오 - TOEFL/IELTS + 박사 준비
+export const ACADEMIC_SCENARIOS: Scenario[] = [
+  // TOEFL 스피킹 연습
+  {
+    id: 'ac-toefl-independent',
+    trackId: 'academic',
+    title: 'TOEFL 독립형 스피킹',
+    description: '주어진 주제에 대해 자신의 의견을 논리적으로 말합니다.',
+    situation: 'TOEFL 스피킹 시험의 독립형 문제입니다. 주어진 질문에 대해 45초 동안 자신의 의견을 이유와 예시를 들어 답변하세요.',
+    aiRole: 'TOEFL 시험관 (질문 제시 및 피드백)',
+    userRole: 'TOEFL 응시자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "In my opinion...",
+      "I believe that... because...",
+      "For example...",
+    ],
+  },
+  {
+    id: 'ac-toefl-integrated',
+    trackId: 'academic',
+    title: 'TOEFL 통합형 스피킹',
+    description: '읽기/듣기 자료를 바탕으로 요약하고 분석합니다.',
+    situation: '대학 캠퍼스 정책 변경에 대한 공지와 이에 대한 학생의 반응을 듣고 요약해야 합니다. 읽기 자료의 내용과 듣기에서 학생의 의견을 연결하여 설명하세요.',
+    aiRole: 'TOEFL 시험관 (지문 제시 및 평가)',
+    userRole: 'TOEFL 응시자',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "According to the reading passage...",
+      "The student argues that...",
+      "This contradicts/supports the reading because...",
+    ],
+  },
+  {
+    id: 'ac-ielts-part2',
+    trackId: 'academic',
+    title: 'IELTS 스피킹 Part 2',
+    description: '주어진 주제 카드에 대해 2분간 롱턴 스피킹을 합니다.',
+    situation: 'IELTS 스피킹 Part 2입니다. 주제 카드를 받고 1분 준비 후 2분간 해당 주제에 대해 이야기하세요. 시험관이 후속 질문을 할 수 있습니다.',
+    aiRole: 'IELTS 시험관',
+    userRole: 'IELTS 응시자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "I'd like to talk about...",
+      "What made it special was...",
+      "Looking back, I think...",
+    ],
+  },
+  // 박사 인터뷰
+  {
+    id: 'ac-phd-interview',
+    trackId: 'academic',
+    title: '박사 과정 입학 인터뷰',
+    description: '서울 대학 박사 과정 지원을 위한 교수님과의 인터뷰입니다.',
+    situation: '서울에 있는 대학 박사 과정에 지원했습니다. 지도교수가 될 수 있는 교수님과 화상 인터뷰를 합니다. 연구 관심사, 석사 연구 경험, 박사 과정 목표에 대해 이야기하세요.',
+    aiRole: '서울 대학 교수 (지원 연구실 지도교수)',
+    userRole: '박사 과정 지원자 (Dani)',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "My research interests lie in...",
+      "During my master's program, I focused on...",
+      "I'm particularly interested in your lab because...",
+    ],
+  },
+  {
+    id: 'ac-research-motivation',
+    trackId: 'academic',
+    title: '연구 동기 설명하기',
+    description: '왜 이 연구 분야를 선택했는지, 박사 과정을 하려는 이유를 설명합니다.',
+    situation: '박사 인터뷰에서 교수님이 "Why do you want to pursue a PhD?"라고 물었습니다. 학문적 열정과 구체적인 연구 목표를 설명하세요.',
+    aiRole: '면접관 교수',
+    userRole: '박사 지원자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "My long-term goal is to...",
+      "I'm passionate about this field because...",
+      "I hope to contribute to...",
+    ],
+  },
+  {
+    id: 'ac-thesis-defense',
+    trackId: 'academic',
+    title: '석사 논문 설명하기',
+    description: '석사 논문의 주제, 방법론, 기여점을 설명합니다.',
+    situation: '박사 인터뷰에서 석사 논문에 대해 물어봅니다. 연구 배경, 사용한 방법론, 주요 발견, 그리고 이 연구의 의의를 설명하세요.',
+    aiRole: '교수 (심사위원)',
+    userRole: '석사 졸업생',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "The main contribution of my thesis was...",
+      "I used... methodology to...",
+      "Our findings suggest that...",
+    ],
+  },
+  // 학술 발표 및 학회
+  {
+    id: 'ac-conference-presentation',
+    trackId: 'academic',
+    title: '학회 발표하기',
+    description: '국제 학회에서 연구 결과를 발표합니다.',
+    situation: '국제 학회에서 15분간 연구 발표를 합니다. 연구 배경, 방법론, 결과, 결론을 체계적으로 발표하고 청중의 질문에 답변하세요.',
+    aiRole: '학회 참석자 (다른 연구자)',
+    userRole: '발표자',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "Today, I'd like to present my research on...",
+      "The objective of this study is to...",
+      "This has implications for...",
+    ],
+  },
+  {
+    id: 'ac-conference-qa',
+    trackId: 'academic',
+    title: '학회 Q&A 대응하기',
+    description: '발표 후 청중의 날카로운 질문에 답변합니다.',
+    situation: '학회 발표를 마치고 Q&A 시간입니다. 청중이 연구 방법론과 결과 해석에 대해 질문합니다. 침착하게 답변하세요.',
+    aiRole: '비판적인 청중 (시니어 연구자)',
+    userRole: '발표자',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "That's a great question. Let me address that.",
+      "You raise an important point...",
+      "I acknowledge the limitation, and...",
+    ],
+  },
+  {
+    id: 'ac-conference-networking',
+    trackId: 'academic',
+    title: '학회 네트워킹',
+    description: '학회에서 다른 연구자와 네트워킹합니다.',
+    situation: '국제 학회 커피 브레이크 시간입니다. 관심 있는 연구를 발표한 다른 연구자에게 다가가 대화를 시작하고 연구에 대해 이야기해 보세요.',
+    aiRole: '다른 대학 연구자',
+    userRole: '대학원생',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "I really enjoyed your presentation on...",
+      "I'm working on a similar topic...",
+      "Would you be interested in collaborating?",
+    ],
+  },
+  // 랩미팅 및 세미나
+  {
+    id: 'ac-lab-meeting',
+    trackId: 'academic',
+    title: '랩미팅 참여하기',
+    description: '연구실 미팅에서 진행 상황을 보고하고 피드백을 받습니다.',
+    situation: '주간 랩미팅입니다. 이번 주 연구 진행 상황을 보고하고, 겪고 있는 어려움에 대해 조언을 구하세요.',
+    aiRole: '지도교수 및 랩 동료',
+    userRole: '대학원생',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "This week, I've been working on...",
+      "I'm currently stuck on...",
+      "Do you have any suggestions for...?",
+    ],
+  },
+  {
+    id: 'ac-paper-discussion',
+    trackId: 'academic',
+    title: '논문 세미나 토론',
+    description: '저널 클럽에서 최신 논문에 대해 토론합니다.',
+    situation: '저널 클럽 세미나입니다. 이번 주 논문의 강점과 약점을 분석하고, 자신의 연구와 어떻게 연결되는지 토론하세요.',
+    aiRole: '세미나 참석자들',
+    userRole: '논문 발제자',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "The main contribution of this paper is...",
+      "One limitation I noticed is...",
+      "This relates to my research because...",
+    ],
+  },
+  {
+    id: 'ac-professor-meeting',
+    trackId: 'academic',
+    title: '지도교수 면담',
+    description: '지도교수와 연구 방향에 대해 상담합니다.',
+    situation: '지도교수님과 1:1 면담 시간입니다. 현재 연구의 진행 상황, 앞으로의 계획, 그리고 조언이 필요한 부분에 대해 이야기하세요.',
+    aiRole: '지도교수',
+    userRole: '대학원생',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "I wanted to discuss my progress on...",
+      "I'm considering two approaches...",
+      "What would you recommend?",
+    ],
+  },
+];
+
+// 트랙별 시나리오 맵
+export const SCENARIOS_BY_TRACK: Record<TrackId, Scenario[]> = {
+  'daily-life': DAILY_LIFE_SCENARIOS,
+  'beauty-tech': BEAUTY_TECH_SCENARIOS,
+  'business': BUSINESS_SCENARIOS,
+  'academic': ACADEMIC_SCENARIOS,
+  'travel': [], // 추후 추가
+  'kids': [], // 추후 추가
+};
+
+// 트랙에 맞는 시나리오 가져오기 (없으면 기본 비즈니스 시나리오 반환)
+export function getScenariosForTrack(trackId: TrackId): Scenario[] {
+  const scenarios = SCENARIOS_BY_TRACK[trackId];
+  if (scenarios && scenarios.length > 0) {
+    return scenarios;
+  }
+  // 해당 트랙에 시나리오가 없으면 생활 영어 시나리오 반환
+  return DAILY_LIFE_SCENARIOS;
+}

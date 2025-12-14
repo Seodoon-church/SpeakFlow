@@ -8,7 +8,9 @@ import {
   RotateCcw,
   ChevronRight,
   Play,
-  Pause
+  Pause,
+  X,
+  HelpCircle
 } from 'lucide-react';
 import { useLearningStore } from '@/stores';
 
@@ -43,7 +45,50 @@ const SAMPLE_CHUNKS = [
   },
 ];
 
-type LearningStep = 'intro' | 'chunk' | 'shadowing' | 'complete';
+// 복습용 퀴즈 데이터 (전일 학습 표현)
+const REVIEW_QUIZ = [
+  {
+    id: 'q1',
+    type: 'meaning' as const,
+    question: "다음 표현의 의미는?",
+    expression: "I'll keep you posted.",
+    correctAnswer: "진행 상황을 계속 알려드릴게요.",
+    options: [
+      "진행 상황을 계속 알려드릴게요.",
+      "포스터를 보관해 드릴게요.",
+      "당신을 게시판에 올릴게요.",
+      "기다려 주세요.",
+    ],
+  },
+  {
+    id: 'q2',
+    type: 'expression' as const,
+    question: "다음 의미에 맞는 표현은?",
+    meaning: "그것에 대해 더 자세히 설명해 주시겠어요?",
+    correctAnswer: "Could you elaborate on that?",
+    options: [
+      "Could you elaborate on that?",
+      "Could you repeat that?",
+      "Could you speak louder?",
+      "Could you wait a moment?",
+    ],
+  },
+  {
+    id: 'q3',
+    type: 'fillblank' as const,
+    question: "빈칸에 들어갈 단어는?",
+    sentence: "Let's _____ to the main topic.",
+    correctAnswer: "get back",
+    options: ["get back", "go forward", "come in", "take off"],
+  },
+];
+
+type LearningStep = 'intro' | 'warmup' | 'chunk' | 'shadowing' | 'complete';
+
+interface QuizAnswer {
+  questionId: string;
+  isCorrect: boolean;
+}
 
 export default function LearnPage() {
   const navigate = useNavigate();
@@ -54,12 +99,20 @@ export default function LearnPage() {
   const [showMeaning, setShowMeaning] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
 
+  // 워밍업 퀴즈 상태
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [quizAnswers, setQuizAnswers] = useState<QuizAnswer[]>([]);
+  const [showQuizResult, setShowQuizResult] = useState(false);
+
   const currentChunk = SAMPLE_CHUNKS[chunkIndex];
+  const currentQuiz = REVIEW_QUIZ[quizIndex];
   const progress = ((chunkIndex + 1) / SAMPLE_CHUNKS.length) * 100;
 
-  const handlePlayAudio = () => {
-    // TTS 재생 (Web Speech API)
-    const utterance = new SpeechSynthesisUtterance(currentChunk.expression);
+  const handlePlayAudio = (text?: string) => {
+    const targetText = text || currentChunk.expression;
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(targetText);
     utterance.lang = 'en-US';
     utterance.rate = 0.8;
     utterance.onstart = () => setIsPlaying(true);
@@ -69,7 +122,14 @@ export default function LearnPage() {
 
   const handleNext = () => {
     if (step === 'intro') {
-      setStep('chunk');
+      setStep('warmup');
+    } else if (step === 'warmup') {
+      if (showQuizResult) {
+        setStep('chunk');
+        setQuizIndex(0);
+        setQuizAnswers([]);
+        setShowQuizResult(false);
+      }
     } else if (step === 'chunk') {
       setStep('shadowing');
     } else if (step === 'shadowing') {
@@ -83,10 +143,27 @@ export default function LearnPage() {
     }
   };
 
+  const handleQuizAnswer = (answer: string) => {
+    setSelectedAnswer(answer);
+    const isCorrect = answer === currentQuiz.correctAnswer;
+
+    setTimeout(() => {
+      setQuizAnswers([...quizAnswers, { questionId: currentQuiz.id, isCorrect }]);
+
+      if (quizIndex < REVIEW_QUIZ.length - 1) {
+        setQuizIndex(quizIndex + 1);
+        setSelectedAnswer(null);
+      } else {
+        setShowQuizResult(true);
+      }
+    }, 1000);
+  };
+
   const handleRecord = () => {
     setIsRecording(!isRecording);
-    // 실제 녹음 구현 필요
   };
+
+  const correctCount = quizAnswers.filter(a => a.isCorrect).length;
 
   // 시작 화면
   if (step === 'intro') {
@@ -110,14 +187,18 @@ export default function LearnPage() {
 
           <div className="w-full space-y-3 mb-8">
             {[
-              { step: 1, name: '청크 학습', time: '3분' },
-              { step: 2, name: '섀도잉', time: '3분' },
+              { step: 1, name: '워밍업', time: '2분', desc: '전일 학습 복습 퀴즈' },
+              { step: 2, name: '청크 학습', time: '3분', desc: '오늘의 핵심 표현' },
+              { step: 3, name: '섀도잉', time: '3분', desc: '따라 말하기 연습' },
             ].map((item) => (
               <div key={item.step} className="flex items-center gap-3 p-4 bg-white rounded-xl">
                 <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-bold text-sm">
                   {item.step}
                 </div>
-                <span className="flex-1 font-medium text-foreground">{item.name}</span>
+                <div className="flex-1">
+                  <span className="font-medium text-foreground">{item.name}</span>
+                  <p className="text-xs text-gray-400">{item.desc}</p>
+                </div>
                 <span className="text-sm text-gray-400">{item.time}</span>
               </div>
             ))}
@@ -127,6 +208,174 @@ export default function LearnPage() {
             <Play className="w-5 h-5" />
             학습 시작
           </button>
+        </main>
+      </div>
+    );
+  }
+
+  // 워밍업 (퀴즈) 화면
+  if (step === 'warmup') {
+    const quizProgress = ((quizIndex + 1) / REVIEW_QUIZ.length) * 100;
+
+    // 퀴즈 결과 화면
+    if (showQuizResult) {
+      return (
+        <div className="min-h-screen bg-background flex flex-col">
+          <header className="flex items-center px-4 py-4">
+            <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+              <ChevronLeft className="w-6 h-6 text-gray-600" />
+            </button>
+            <span className="flex-1 text-center font-semibold text-foreground">워밍업 완료</span>
+            <div className="w-10" />
+          </header>
+
+          <main className="flex-1 flex flex-col items-center justify-center px-6 pb-32">
+            <div className="text-6xl mb-6">
+              {correctCount === REVIEW_QUIZ.length ? '🎯' : correctCount >= REVIEW_QUIZ.length / 2 ? '👍' : '💪'}
+            </div>
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              {correctCount}/{REVIEW_QUIZ.length} 정답!
+            </h1>
+            <p className="text-gray-500 mb-8 text-center">
+              {correctCount === REVIEW_QUIZ.length
+                ? '완벽해요! 복습이 잘 되었어요.'
+                : correctCount >= REVIEW_QUIZ.length / 2
+                  ? '잘했어요! 조금 더 연습하면 완벽해질 거예요.'
+                  : '복습이 필요해요. 오늘 학습으로 더 익혀봐요!'}
+            </p>
+
+            <div className="w-full bg-white rounded-2xl p-4 mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-500">정답률</span>
+                <span className="font-bold text-primary-500">
+                  {Math.round((correctCount / REVIEW_QUIZ.length) * 100)}%
+                </span>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary-500 transition-all duration-500"
+                  style={{ width: `${(correctCount / REVIEW_QUIZ.length) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <button onClick={handleNext} className="btn-primary w-full flex items-center justify-center gap-2">
+              오늘의 학습 시작
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </main>
+        </div>
+      );
+    }
+
+    // 퀴즈 진행 화면
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="flex items-center justify-between px-4 py-4">
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2">
+            <ChevronLeft className="w-6 h-6 text-gray-600" />
+          </button>
+          <span className="text-sm text-gray-500">
+            {quizIndex + 1} / {REVIEW_QUIZ.length}
+          </span>
+          <div className="w-10" />
+        </header>
+
+        {/* 프로그레스 */}
+        <div className="h-1 bg-gray-100 mx-4 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-accent-500 transition-all duration-300"
+            style={{ width: `${quizProgress}%` }}
+          />
+        </div>
+
+        {/* 단계 표시 */}
+        <div className="px-4 py-3">
+          <span className="text-sm font-semibold px-3 py-1 rounded-full bg-accent-100 text-accent-600">
+            <HelpCircle className="w-4 h-4 inline mr-1" />
+            워밍업 퀴즈
+          </span>
+        </div>
+
+        <main className="flex-1 px-4 pb-8">
+          <div className="card mb-6">
+            <p className="text-sm text-gray-500 mb-3">{currentQuiz.question}</p>
+
+            {currentQuiz.type === 'meaning' && (
+              <div className="flex items-center gap-3">
+                <p className="text-xl font-bold text-foreground flex-1">
+                  {currentQuiz.expression}
+                </p>
+                <button
+                  onClick={() => handlePlayAudio(currentQuiz.expression)}
+                  className="p-2 bg-gray-100 rounded-full"
+                >
+                  <Volume2 className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+            )}
+
+            {currentQuiz.type === 'expression' && (
+              <p className="text-xl font-bold text-foreground">
+                {currentQuiz.meaning}
+              </p>
+            )}
+
+            {currentQuiz.type === 'fillblank' && (
+              <p className="text-xl font-bold text-foreground">
+                {currentQuiz.sentence}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            {currentQuiz.options.map((option, idx) => {
+              const isSelected = selectedAnswer === option;
+              const isCorrect = option === currentQuiz.correctAnswer;
+              const showResult = selectedAnswer !== null;
+
+              let buttonStyle = 'bg-white border-2 border-gray-100';
+              if (showResult) {
+                if (isCorrect) {
+                  buttonStyle = 'bg-green-50 border-2 border-green-500';
+                } else if (isSelected && !isCorrect) {
+                  buttonStyle = 'bg-red-50 border-2 border-red-500';
+                }
+              } else if (isSelected) {
+                buttonStyle = 'bg-primary-50 border-2 border-primary-500';
+              }
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => !selectedAnswer && handleQuizAnswer(option)}
+                  disabled={selectedAnswer !== null}
+                  className={`w-full p-4 rounded-xl text-left transition-all ${buttonStyle}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                      showResult && isCorrect
+                        ? 'bg-green-500 text-white'
+                        : showResult && isSelected && !isCorrect
+                          ? 'bg-red-500 text-white'
+                          : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {showResult && isCorrect ? (
+                        <Check className="w-4 h-4" />
+                      ) : showResult && isSelected && !isCorrect ? (
+                        <X className="w-4 h-4" />
+                      ) : (
+                        String.fromCharCode(65 + idx)
+                      )}
+                    </div>
+                    <span className={`flex-1 ${showResult && isCorrect ? 'text-green-700 font-semibold' : 'text-foreground'}`}>
+                      {option}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </main>
       </div>
     );
@@ -194,7 +443,7 @@ export default function LearnPage() {
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm text-gray-400">영어 표현</span>
             <button
-              onClick={handlePlayAudio}
+              onClick={() => handlePlayAudio()}
               className={`p-2 rounded-full ${
                 isPlaying ? 'bg-primary-100 text-primary-600' : 'bg-gray-100 text-gray-600'
               }`}
@@ -246,7 +495,7 @@ export default function LearnPage() {
             </p>
             <div className="flex items-center justify-center gap-4">
               <button
-                onClick={handlePlayAudio}
+                onClick={() => handlePlayAudio()}
                 className="p-4 bg-gray-100 rounded-full"
               >
                 <Volume2 className="w-6 h-6 text-gray-600" />
