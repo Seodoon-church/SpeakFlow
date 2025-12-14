@@ -63,10 +63,10 @@ export default function HomePage() {
           {members.length > 0 && (
             <button
               onClick={() => setShowFamilySelector(!showFamilySelector)}
-              className="flex items-center gap-1 px-3 py-2 bg-primary-50 text-primary-600 rounded-full text-sm font-medium"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-100 hover:bg-primary-200 text-primary-700 rounded-xl text-sm font-semibold transition-colors border-2 border-primary-200"
             >
-              <Users className="w-4 h-4" />
-              <span>전환</span>
+              <Users className="w-5 h-5" />
+              <span>프로필 전환</span>
               <ChevronDown className={`w-4 h-4 transition-transform ${showFamilySelector ? 'rotate-180' : ''}`} />
             </button>
           )}
