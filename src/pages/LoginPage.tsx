@@ -235,6 +235,20 @@ export default function LoginPage() {
             </button>
           </div>
 
+          {/* 로그인 없이 시작 */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <button
+              onClick={() => navigate('/home')}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+            >
+              <span>로그인 없이 시작하기</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <p className="text-xs text-gray-400 text-center mt-2">
+              가족 프로필로 바로 사용할 수 있어요
+            </p>
+          </div>
+
           {/* 비밀번호 찾기 */}
           {isLogin && (
             <button
