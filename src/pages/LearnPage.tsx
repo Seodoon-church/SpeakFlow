@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
@@ -13,75 +13,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { useLearningStore } from '@/stores';
-
-// 임시 청크 데이터
-const SAMPLE_CHUNKS = [
-  {
-    id: '1',
-    expression: "I was wondering if we could schedule a meeting.",
-    meaning: "회의 일정을 잡을 수 있을지 여쭤봐도 될까요?",
-    pronunciation: "/aɪ wəz ˈwʌndərɪŋ ɪf wi kʊd ˈʃedjuːl ə ˈmiːtɪŋ/",
-    example_sentence: "I was wondering if we could schedule a meeting next week to discuss the project.",
-    example_translation: "다음 주에 프로젝트를 논의하기 위한 회의를 잡을 수 있을지 여쭤봐도 될까요?",
-    tips: "공손하게 요청할 때 사용하는 표현입니다. 직접적인 'Can we...?' 보다 더 정중합니다.",
-  },
-  {
-    id: '2',
-    expression: "Could you please clarify that point?",
-    meaning: "그 부분을 명확히 해주시겠어요?",
-    pronunciation: "/kʊd ju pliːz ˈklærɪfaɪ ðæt pɔɪnt/",
-    example_sentence: "Could you please clarify that point? I want to make sure I understand correctly.",
-    example_translation: "그 부분을 명확히 해주시겠어요? 제가 정확히 이해했는지 확인하고 싶어요.",
-    tips: "상대방의 말을 더 잘 이해하기 위해 질문할 때 사용합니다.",
-  },
-  {
-    id: '3',
-    expression: "Let me get back to you on that.",
-    meaning: "그 건에 대해서는 확인 후 다시 연락드릴게요.",
-    pronunciation: "/let mi ɡet bæk tu ju ɒn ðæt/",
-    example_sentence: "Let me get back to you on that after I check with my team.",
-    example_translation: "팀과 확인 후 그 건에 대해 다시 연락드릴게요.",
-    tips: "즉답이 어려울 때 시간을 벌기 위해 사용하는 유용한 표현입니다.",
-  },
-];
-
-// 복습용 퀴즈 데이터 (전일 학습 표현)
-const REVIEW_QUIZ = [
-  {
-    id: 'q1',
-    type: 'meaning' as const,
-    question: "다음 표현의 의미는?",
-    expression: "I'll keep you posted.",
-    correctAnswer: "진행 상황을 계속 알려드릴게요.",
-    options: [
-      "진행 상황을 계속 알려드릴게요.",
-      "포스터를 보관해 드릴게요.",
-      "당신을 게시판에 올릴게요.",
-      "기다려 주세요.",
-    ],
-  },
-  {
-    id: 'q2',
-    type: 'expression' as const,
-    question: "다음 의미에 맞는 표현은?",
-    meaning: "그것에 대해 더 자세히 설명해 주시겠어요?",
-    correctAnswer: "Could you elaborate on that?",
-    options: [
-      "Could you elaborate on that?",
-      "Could you repeat that?",
-      "Could you speak louder?",
-      "Could you wait a moment?",
-    ],
-  },
-  {
-    id: 'q3',
-    type: 'fillblank' as const,
-    question: "빈칸에 들어갈 단어는?",
-    sentence: "Let's _____ to the main topic.",
-    correctAnswer: "get back",
-    options: ["get back", "go forward", "come in", "take off"],
-  },
-];
+import { getTodayChunks, generateQuizFromChunks } from '@/data/chunks';
 
 type LearningStep = 'intro' | 'warmup' | 'chunk' | 'shadowing' | 'complete';
 
@@ -105,9 +37,19 @@ export default function LearnPage() {
   const [quizAnswers, setQuizAnswers] = useState<QuizAnswer[]>([]);
   const [showQuizResult, setShowQuizResult] = useState(false);
 
-  const currentChunk = SAMPLE_CHUNKS[chunkIndex];
-  const currentQuiz = REVIEW_QUIZ[quizIndex];
-  const progress = ((chunkIndex + 1) / SAMPLE_CHUNKS.length) * 100;
+  // 현재 트랙에 맞는 청크 가져오기
+  const chunks = useMemo(() => {
+    return getTodayChunks(currentTrack?.id || 'daily-life', 3);
+  }, [currentTrack?.id]);
+
+  // 퀴즈 생성
+  const quizzes = useMemo(() => {
+    return generateQuizFromChunks(chunks);
+  }, [chunks]);
+
+  const currentChunk = chunks[chunkIndex];
+  const currentQuiz = quizzes[quizIndex];
+  const progress = ((chunkIndex + 1) / chunks.length) * 100;
 
   const handlePlayAudio = (text?: string) => {
     const targetText = text || currentChunk.expression;
@@ -133,7 +75,7 @@ export default function LearnPage() {
     } else if (step === 'chunk') {
       setStep('shadowing');
     } else if (step === 'shadowing') {
-      if (chunkIndex < SAMPLE_CHUNKS.length - 1) {
+      if (chunkIndex < chunks.length - 1) {
         setChunkIndex(chunkIndex + 1);
         setStep('chunk');
         setShowMeaning(false);
@@ -150,7 +92,7 @@ export default function LearnPage() {
     setTimeout(() => {
       setQuizAnswers([...quizAnswers, { questionId: currentQuiz.id, isCorrect }]);
 
-      if (quizIndex < REVIEW_QUIZ.length - 1) {
+      if (quizIndex < quizzes.length - 1) {
         setQuizIndex(quizIndex + 1);
         setSelectedAnswer(null);
       } else {
@@ -182,7 +124,7 @@ export default function LearnPage() {
           </h1>
           <p className="text-gray-500 mb-8 text-center">
             {currentTrack?.name || 'Business'} 트랙<br />
-            오늘 배울 표현 {SAMPLE_CHUNKS.length}개
+            오늘 배울 표현 {chunks.length}개
           </p>
 
           <div className="w-full space-y-3 mb-8">
@@ -215,7 +157,7 @@ export default function LearnPage() {
 
   // 워밍업 (퀴즈) 화면
   if (step === 'warmup') {
-    const quizProgress = ((quizIndex + 1) / REVIEW_QUIZ.length) * 100;
+    const quizProgress = ((quizIndex + 1) / quizzes.length) * 100;
 
     // 퀴즈 결과 화면
     if (showQuizResult) {
@@ -231,15 +173,15 @@ export default function LearnPage() {
 
           <main className="flex-1 flex flex-col items-center justify-center px-6 pb-32">
             <div className="text-6xl mb-6">
-              {correctCount === REVIEW_QUIZ.length ? '🎯' : correctCount >= REVIEW_QUIZ.length / 2 ? '👍' : '💪'}
+              {correctCount === quizzes.length ? '🎯' : correctCount >= quizzes.length / 2 ? '👍' : '💪'}
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              {correctCount}/{REVIEW_QUIZ.length} 정답!
+              {correctCount}/{quizzes.length} 정답!
             </h1>
             <p className="text-gray-500 mb-8 text-center">
-              {correctCount === REVIEW_QUIZ.length
+              {correctCount === quizzes.length
                 ? '완벽해요! 복습이 잘 되었어요.'
-                : correctCount >= REVIEW_QUIZ.length / 2
+                : correctCount >= quizzes.length / 2
                   ? '잘했어요! 조금 더 연습하면 완벽해질 거예요.'
                   : '복습이 필요해요. 오늘 학습으로 더 익혀봐요!'}
             </p>
@@ -248,13 +190,13 @@ export default function LearnPage() {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm text-gray-500">정답률</span>
                 <span className="font-bold text-primary-500">
-                  {Math.round((correctCount / REVIEW_QUIZ.length) * 100)}%
+                  {Math.round((correctCount / quizzes.length) * 100)}%
                 </span>
               </div>
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-primary-500 transition-all duration-500"
-                  style={{ width: `${(correctCount / REVIEW_QUIZ.length) * 100}%` }}
+                  style={{ width: `${(correctCount / quizzes.length) * 100}%` }}
                 />
               </div>
             </div>
@@ -276,7 +218,7 @@ export default function LearnPage() {
             <ChevronLeft className="w-6 h-6 text-gray-600" />
           </button>
           <span className="text-sm text-gray-500">
-            {quizIndex + 1} / {REVIEW_QUIZ.length}
+            {quizIndex + 1} / {quizzes.length}
           </span>
           <div className="w-10" />
         </header>
@@ -318,12 +260,6 @@ export default function LearnPage() {
             {currentQuiz.type === 'expression' && (
               <p className="text-xl font-bold text-foreground">
                 {currentQuiz.meaning}
-              </p>
-            )}
-
-            {currentQuiz.type === 'fillblank' && (
-              <p className="text-xl font-bold text-foreground">
-                {currentQuiz.sentence}
               </p>
             )}
           </div>
@@ -388,7 +324,7 @@ export default function LearnPage() {
         <div className="text-6xl mb-6">🎉</div>
         <h1 className="text-2xl font-bold text-foreground mb-2">학습 완료!</h1>
         <p className="text-gray-500 mb-8 text-center">
-          오늘 {SAMPLE_CHUNKS.length}개의 표현을 학습했어요
+          오늘 {chunks.length}개의 표현을 학습했어요
         </p>
 
         <div className="w-full space-y-3">
@@ -412,7 +348,7 @@ export default function LearnPage() {
           <ChevronLeft className="w-6 h-6 text-gray-600" />
         </button>
         <span className="text-sm text-gray-500">
-          {chunkIndex + 1} / {SAMPLE_CHUNKS.length}
+          {chunkIndex + 1} / {chunks.length}
         </span>
         <div className="w-10" />
       </header>

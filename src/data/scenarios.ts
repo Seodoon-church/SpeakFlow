@@ -498,6 +498,160 @@ export const ACADEMIC_SCENARIOS: Scenario[] = [
   },
 ];
 
+// 화장품 기획/마케팅 시나리오
+export const COSMETICS_SCENARIOS: Scenario[] = [
+  {
+    id: 'cos-brand-strategy',
+    trackId: 'cosmetics',
+    title: '브랜드 전략 발표',
+    description: '경영진에게 새로운 브랜드 전략을 발표합니다.',
+    situation: '분기별 전략 회의에서 새로운 스킨케어 라인의 브랜드 포지셔닝과 마케팅 전략을 발표해야 합니다. 타겟 고객, 경쟁사 분석, 차별화 포인트를 설명하세요.',
+    aiRole: '마케팅 이사 / CMO',
+    userRole: '브랜드 매니저',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "Our brand positioning is...",
+      "We've identified a gap in the market for...",
+      "What sets us apart from competitors is...",
+    ],
+  },
+  {
+    id: 'cos-product-planning',
+    trackId: 'cosmetics',
+    title: '신제품 기획 미팅',
+    description: 'R&D팀과 신제품 컨셉을 논의합니다.',
+    situation: '새로운 세럼 제품을 기획 중입니다. R&D팀과 제품 컨셉, 주요 성분, 타겟 효능에 대해 논의하세요.',
+    aiRole: 'R&D 팀장',
+    userRole: '제품 기획자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "The concept behind this product line is...",
+      "The key ingredients include...",
+      "This product is formulated to...",
+    ],
+  },
+  {
+    id: 'cos-influencer-collab',
+    trackId: 'cosmetics',
+    title: '인플루언서 협업 제안',
+    description: '뷰티 인플루언서에게 협업을 제안합니다.',
+    situation: '새로운 캠페인을 위해 유명 뷰티 인플루언서와 미팅합니다. 브랜드 가치, 협업 내용, 기대 효과를 설명하고 협업을 이끌어내세요.',
+    aiRole: '뷰티 인플루언서 / 크리에이터',
+    userRole: '인플루언서 마케팅 담당자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "We're partnering with influencers who...",
+      "The campaign will generate buzz through...",
+      "We're building a community around...",
+    ],
+  },
+  {
+    id: 'cos-campaign-pitch',
+    trackId: 'cosmetics',
+    title: '마케팅 캠페인 제안',
+    description: '광고 대행사에 캠페인 브리프를 전달합니다.',
+    situation: '신제품 런칭을 위한 마케팅 캠페인 기획 미팅입니다. 대행사에 브랜드 방향, 타겟 고객, KPI 목표를 전달하세요.',
+    aiRole: '광고 대행사 AE',
+    userRole: '마케팅 매니저',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "Our social media strategy focuses on...",
+      "We'll measure success by tracking...",
+      "Our content pillars are...",
+    ],
+  },
+  {
+    id: 'cos-launch-event',
+    trackId: 'cosmetics',
+    title: '신제품 런칭 이벤트',
+    description: '프레스와 인플루언서 대상 런칭 이벤트를 진행합니다.',
+    situation: '새로운 립스틱 라인 런칭 이벤트입니다. 참석한 뷰티 에디터와 인플루언서에게 제품을 소개하고 브랜드 스토리를 전달하세요.',
+    aiRole: '뷰티 매거진 에디터',
+    userRole: '브랜드 홍보 담당자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "The launch event will feature...",
+      "The brand story resonates with consumers because...",
+      "We're offering an exclusive pre-order discount.",
+    ],
+  },
+  {
+    id: 'cos-trade-show',
+    trackId: 'cosmetics',
+    title: '뷰티 전시회 바이어 미팅',
+    description: '코스모프로프 전시회에서 해외 바이어를 만납니다.',
+    situation: 'Cosmoprof 전시회 부스에서 유럽 유통사 바이어가 브랜드에 관심을 보입니다. 브랜드와 제품을 소개하고 유통 계약 가능성을 탐색하세요.',
+    aiRole: '유럽 유통사 바이어',
+    userRole: '해외 영업 담당자',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "We're targeting...",
+      "The unique selling point is...",
+      "We're aiming for a market share of...",
+    ],
+  },
+  {
+    id: 'cos-market-analysis',
+    trackId: 'cosmetics',
+    title: '시장 분석 보고',
+    description: '경쟁사 분석과 시장 트렌드를 보고합니다.',
+    situation: '월간 마케팅 회의에서 최근 뷰티 시장 트렌드와 경쟁사 동향을 분석하여 보고해야 합니다.',
+    aiRole: '마케팅팀장',
+    userRole: '시장 분석 담당자',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "According to market research...",
+      "Our competitors are...",
+      "This aligns with current beauty trends.",
+    ],
+  },
+  {
+    id: 'cos-package-review',
+    trackId: 'cosmetics',
+    title: '패키지 디자인 리뷰',
+    description: '디자인팀과 패키지 컨셉을 논의합니다.',
+    situation: '새로운 제품 라인의 패키지 디자인 시안이 나왔습니다. 브랜드 아이덴티티와의 일관성, 지속가능성, 소비자 반응 예측에 대해 논의하세요.',
+    aiRole: '패키지 디자이너',
+    userRole: '브랜드 매니저',
+    difficulty: 'beginner',
+    targetExpressions: [
+      "The packaging design reflects...",
+      "We're launching with a hero product approach.",
+      "The price point will be...",
+    ],
+  },
+  {
+    id: 'cos-pr-interview',
+    trackId: 'cosmetics',
+    title: '매거진 인터뷰',
+    description: '뷰티 매거진 인터뷰에서 브랜드를 소개합니다.',
+    situation: '유명 뷰티 매거진에서 브랜드 인터뷰 요청이 왔습니다. 브랜드 철학, 제품 특징, 향후 계획에 대해 이야기하세요.',
+    aiRole: '뷰티 매거진 기자',
+    userRole: '브랜드 디렉터',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "The brand story resonates with consumers because...",
+      "Customer feedback indicates that...",
+      "We're seeing strong organic growth in...",
+    ],
+  },
+  {
+    id: 'cos-retail-meeting',
+    trackId: 'cosmetics',
+    title: '리테일 바이어 미팅',
+    description: '백화점/드럭스토어 바이어와 입점 협상을 합니다.',
+    situation: '올리브영 바이어와 신제품 입점 미팅입니다. 제품 라인업, 가격 정책, 프로모션 계획을 제안하세요.',
+    aiRole: '드럭스토어 MD (상품기획자)',
+    userRole: '영업 매니저',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "The omnichannel approach includes...",
+      "We expect a sell-through rate of...",
+      "We've secured coverage in...",
+    ],
+  },
+];
+
 // 트랙별 시나리오 맵
 export const SCENARIOS_BY_TRACK: Record<TrackId, Scenario[]> = {
   'daily-life': DAILY_LIFE_SCENARIOS,
@@ -506,6 +660,7 @@ export const SCENARIOS_BY_TRACK: Record<TrackId, Scenario[]> = {
   'academic': ACADEMIC_SCENARIOS,
   'travel': [], // 추후 추가
   'kids': [], // 추후 추가
+  'cosmetics': COSMETICS_SCENARIOS,
 };
 
 // 트랙에 맞는 시나리오 가져오기 (없으면 기본 비즈니스 시나리오 반환)

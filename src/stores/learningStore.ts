@@ -199,4 +199,13 @@ export const TRACKS: Track[] = [
     total_weeks: 12,
     color: '#06B6D4',
   },
+  // 화장품 기획/마케팅
+  {
+    id: 'cosmetics' as TrackId,
+    name: 'Cosmetics Marketing',
+    description: '화장품 기획, 마케팅, 브랜드 전략',
+    icon: '💄',
+    total_weeks: 12,
+    color: '#F472B6',
+  },
 ];

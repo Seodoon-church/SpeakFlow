@@ -78,6 +78,18 @@ const DEFAULT_FAMILY_MEMBERS: FamilyMember[] = [
     lastActiveDate: new Date().toISOString().split('T')[0],
     createdAt: '2025-01-01T00:00:00.000Z',
   },
+  {
+    id: 'member-jolie',
+    name: 'Jolie',
+    avatar: '👩‍🦰',
+    trackId: 'cosmetics',
+    dailyGoalMinutes: 15,
+    streakDays: 0,
+    totalMinutesLearned: 0,
+    chunksLearned: 0,
+    lastActiveDate: null,
+    createdAt: '2025-01-01T00:00:00.000Z',
+  },
 ];
 
 export const useFamilyStore = create<FamilyState>()(
