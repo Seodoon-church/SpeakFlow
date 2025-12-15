@@ -27,7 +27,9 @@
       "Bash(npx vercel --version)",
       "Bash(npx vercel:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: 로그인 없이 시작하기 버튼 추가\n\n- LoginPage에 \"로그인 없이 시작하기\" 버튼 추가\n- 버튼 클릭 시 /home으로 바로 이동\n- 가족 프로필로 바로 사용 가능\n- 나중에 OAuth 설정 후 로그인 기능 활성화 예정\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(firebase login:*)",
+      "Bash(firebase logout:*)"
     ]
   }
 }
