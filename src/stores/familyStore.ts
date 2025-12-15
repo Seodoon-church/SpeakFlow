@@ -175,6 +175,17 @@ export const useFamilyStore = create<FamilyState>()(
     }),
     {
       name: 'speakflow-family',
+      version: 2,
+      migrate: (persistedState: unknown, version: number) => {
+        if (version < 2) {
+          // 이전 버전이면 기본 가족 구성원으로 리셋
+          return {
+            members: DEFAULT_FAMILY_MEMBERS,
+            currentMemberId: 'member-david',
+          };
+        }
+        return persistedState as FamilyState;
+      },
     }
   )
 );
