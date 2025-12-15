@@ -7,3 +7,4 @@ export { default as StatsPage } from './StatsPage';
 export { default as SettingsPage } from './SettingsPage';
 export { default as FamilyPage } from './FamilyPage';
 export { default as ChatPage } from './ChatPage';
+export { default as KanaPage } from './KanaPage';

@@ -881,6 +881,130 @@ export const TRAVEL_SCENARIOS: Scenario[] = [
   },
 ];
 
+// 베이커리 카페 시나리오
+export const BAKERY_CAFE_SCENARIOS: Scenario[] = [
+  {
+    id: 'bc-basic-order',
+    trackId: 'bakery-cafe',
+    title: '기본 주문 받기',
+    description: '외국인 손님의 기본적인 음료와 빵 주문을 받습니다.',
+    situation: '외국인 손님이 카페에 들어와 커피와 빵을 주문하려 합니다. 친절하게 맞이하고 주문을 받아보세요.',
+    aiRole: '외국인 손님',
+    userRole: '카페 직원',
+    difficulty: 'beginner',
+    targetExpressions: [
+      "Welcome! What can I get for you today?",
+      "For here or to go?",
+      "Would you like it warmed up?",
+    ],
+  },
+  {
+    id: 'bc-menu-recommend',
+    trackId: 'bakery-cafe',
+    title: '메뉴 추천하기',
+    description: '손님에게 인기 메뉴와 오늘의 빵을 추천합니다.',
+    situation: '외국인 손님이 메뉴를 보며 뭘 시킬지 고민하고 있습니다. 베스트셀러와 오늘의 추천 메뉴를 소개해주세요.',
+    aiRole: '메뉴 고민 중인 외국인 손님',
+    userRole: '카페 직원',
+    difficulty: 'beginner',
+    targetExpressions: [
+      "This is our best seller.",
+      "It's freshly baked this morning.",
+      "It's soft and fluffy inside.",
+    ],
+  },
+  {
+    id: 'bc-customization',
+    trackId: 'bakery-cafe',
+    title: '음료 커스터마이징',
+    description: '손님의 음료 커스터마이징 요청을 처리합니다.',
+    situation: '외국인 손님이 라떼를 주문하면서 우유 종류와 시럽에 대해 물어봅니다. 옵션을 안내하고 요청에 맞춰 주문을 받으세요.',
+    aiRole: '특별 요청이 있는 외국인 손님',
+    userRole: '카페 직원',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "We have oat milk, soy milk, and almond milk.",
+      "Would you like any syrup or extra shots?",
+      "What size would you like?",
+    ],
+  },
+  {
+    id: 'bc-allergy',
+    trackId: 'bakery-cafe',
+    title: '알레르기 문의 대응',
+    description: '알레르기가 있는 손님의 문의에 대응합니다.',
+    situation: '외국인 손님이 견과류 알레르기가 있다고 합니다. 어떤 제품에 견과류가 들어있는지 안내하고 안전한 메뉴를 추천해주세요.',
+    aiRole: '견과류 알레르기가 있는 외국인 손님',
+    userRole: '카페 직원',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "Do you have any allergies?",
+      "This contains nuts.",
+      "We have gluten-free options.",
+    ],
+  },
+  {
+    id: 'bc-sold-out',
+    trackId: 'bakery-cafe',
+    title: '품절 상황 대처',
+    description: '원하는 메뉴가 품절일 때 대안을 제안합니다.',
+    situation: '외국인 손님이 초코 크루아상을 주문했는데 품절입니다. 정중하게 안내하고 다른 메뉴를 추천해주세요.',
+    aiRole: '초코 크루아상을 원하는 외국인 손님',
+    userRole: '카페 직원',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "I'm sorry, we're out of that.",
+      "Would you like something else instead?",
+      "Can I suggest our almond croissant?",
+    ],
+  },
+  {
+    id: 'bc-payment',
+    trackId: 'bakery-cafe',
+    title: '결제 처리하기',
+    description: '주문 완료 후 결제를 처리합니다.',
+    situation: '외국인 손님의 주문이 끝났습니다. 금액을 안내하고 결제를 진행한 뒤 마무리 인사를 해주세요.',
+    aiRole: '결제하려는 외국인 손님',
+    userRole: '카페 직원',
+    difficulty: 'beginner',
+    targetExpressions: [
+      "That'll be 12,000 won, please.",
+      "Cash or card?",
+      "Enjoy your meal! Have a great day!",
+    ],
+  },
+  {
+    id: 'bc-complaint',
+    trackId: 'bakery-cafe',
+    title: '불만 처리하기',
+    description: '주문이 잘못되었을 때 상황을 해결합니다.',
+    situation: '외국인 손님이 아이스 음료를 주문했는데 핫으로 나왔다고 합니다. 정중하게 사과하고 다시 만들어드리세요.',
+    aiRole: '불만이 있는 외국인 손님',
+    userRole: '카페 직원',
+    difficulty: 'advanced',
+    targetExpressions: [
+      "I'm so sorry about that.",
+      "Let me make a new one for you.",
+      "I'm sorry for the wait.",
+    ],
+  },
+  {
+    id: 'bc-small-talk',
+    trackId: 'bakery-cafe',
+    title: '가벼운 대화 나누기',
+    description: '단골 손님과 날씨나 일상에 대해 가벼운 대화를 나눕니다.',
+    situation: '자주 오시는 외국인 단골 손님이 왔습니다. 반갑게 맞이하고 날씨나 일상에 대해 간단한 대화를 나눠보세요.',
+    aiRole: '친근한 외국인 단골 손님',
+    userRole: '카페 직원',
+    difficulty: 'intermediate',
+    targetExpressions: [
+      "Nice to see you again!",
+      "The usual?",
+      "How's your day going?",
+    ],
+  },
+];
+
 // 트랙별 시나리오 맵
 export const SCENARIOS_BY_TRACK: Record<TrackId, Scenario[]> = {
   'daily-life': DAILY_LIFE_SCENARIOS,
@@ -890,6 +1014,7 @@ export const SCENARIOS_BY_TRACK: Record<TrackId, Scenario[]> = {
   'travel': TRAVEL_SCENARIOS,
   'kids': [], // 추후 추가
   'cosmetics': COSMETICS_SCENARIOS,
+  'bakery-cafe': BAKERY_CAFE_SCENARIOS,
 };
 
 // 트랙에 맞는 시나리오 가져오기 (없으면 기본 비즈니스 시나리오 반환)

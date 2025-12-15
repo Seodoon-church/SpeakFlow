@@ -10,6 +10,7 @@ import {
   SettingsPage,
   FamilyPage,
   ChatPage,
+  KanaPage,
 } from '@/pages';
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
         {/* 전체 화면 라우트 */}
         <Route path="/learn" element={<LearnPage />} />
         <Route path="/roleplay" element={<RoleplayPage />} />
+        <Route path="/kana" element={<KanaPage />} />
 
         {/* 404 리다이렉트 */}
         <Route path="*" element={<Navigate to="/" replace />} />

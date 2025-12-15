@@ -1,44 +1,78 @@
 import { useState } from 'react';
 import { Flame, Clock, BookOpen, Target, TrendingUp, Award } from 'lucide-react';
-import { useAuthStore } from '@/stores';
+import { useFamilyStore, TRACKS } from '@/stores';
 
 type Period = 'week' | 'month' | 'all';
 
-// 샘플 통계 데이터
-const SAMPLE_STATS = {
-  streak: 7,
-  totalMinutes: 145,
-  chunksLearned: 35,
-  scenariosCompleted: 8,
-  weeklyData: [
-    { day: '월', minutes: 15 },
-    { day: '화', minutes: 12 },
-    { day: '수', minutes: 18 },
-    { day: '목', minutes: 0 },
-    { day: '금', minutes: 20 },
-    { day: '토', minutes: 25 },
-    { day: '일', minutes: 15 },
-  ],
-  badges: [
-    { id: '1', name: '첫 학습', icon: '🎉', earnedAt: '2024-12-01' },
-    { id: '2', name: '3일 연속', icon: '🔥', earnedAt: '2024-12-03' },
-    { id: '3', name: '7일 연속', icon: '⚡', earnedAt: '2024-12-07' },
-    { id: '4', name: '표현 마스터', icon: '📚', earnedAt: '2024-12-10' },
-  ],
-};
-
 export default function StatsPage() {
-  const { user } = useAuthStore();
+  const { members, currentMemberId } = useFamilyStore();
   const [period, setPeriod] = useState<Period>('week');
 
-  const maxMinutes = Math.max(...SAMPLE_STATS.weeklyData.map((d) => d.minutes));
+  // 현재 가족 구성원 데이터
+  const currentMember = members.find(m => m.id === currentMemberId);
+  const memberTrack = currentMember ? TRACKS.find(t => t.id === currentMember.trackId) : null;
+
+  // 실제 데이터 사용
+  const stats = {
+    streak: currentMember?.streakDays || 0,
+    totalMinutes: currentMember?.totalMinutesLearned || 0,
+    chunksLearned: currentMember?.chunksLearned || 0,
+    scenariosCompleted: Math.floor((currentMember?.chunksLearned || 0) / 3), // 3청크당 1시나리오 추정
+  };
+
+  // 주간 데이터 (임시 - 실제로는 별도 저장 필요)
+  const weeklyData = [
+    { day: '월', minutes: Math.round(stats.totalMinutes * 0.12) },
+    { day: '화', minutes: Math.round(stats.totalMinutes * 0.15) },
+    { day: '수', minutes: Math.round(stats.totalMinutes * 0.18) },
+    { day: '목', minutes: Math.round(stats.totalMinutes * 0.10) },
+    { day: '금', minutes: Math.round(stats.totalMinutes * 0.20) },
+    { day: '토', minutes: Math.round(stats.totalMinutes * 0.15) },
+    { day: '일', minutes: Math.round(stats.totalMinutes * 0.10) },
+  ];
+
+  const maxMinutes = Math.max(...weeklyData.map((d) => d.minutes), 1);
+
+  // 배지 계산
+  const earnedBadges = [];
+  if (stats.chunksLearned >= 1) {
+    earnedBadges.push({ id: '1', name: '첫 학습', icon: '🎉' });
+  }
+  if (stats.streak >= 3) {
+    earnedBadges.push({ id: '2', name: '3일 연속', icon: '🔥' });
+  }
+  if (stats.streak >= 7) {
+    earnedBadges.push({ id: '3', name: '7일 연속', icon: '⚡' });
+  }
+  if (stats.chunksLearned >= 30) {
+    earnedBadges.push({ id: '4', name: '표현 마스터', icon: '📚' });
+  }
+  if (stats.streak >= 30) {
+    earnedBadges.push({ id: '5', name: '30일 연속', icon: '👑' });
+  }
+  if (stats.chunksLearned >= 100) {
+    earnedBadges.push({ id: '6', name: '100표현', icon: '🎯' });
+  }
+
+  // 미획득 배지
+  const lockedBadges = [
+    { name: '3일 연속', icon: '🔥', condition: stats.streak < 3 },
+    { name: '7일 연속', icon: '⚡', condition: stats.streak < 7 },
+    { name: '30일 연속', icon: '👑', condition: stats.streak < 30 },
+    { name: '100표현', icon: '🎯', condition: stats.chunksLearned < 100 },
+    { name: 'AI 마스터', icon: '🤖', condition: stats.scenariosCompleted < 10 },
+    { name: '완주자', icon: '🏆', condition: stats.totalMinutes < 600 },
+  ].filter(b => b.condition);
 
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* 헤더 */}
       <header className="px-4 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-foreground">학습 통계</h1>
-        <p className="text-gray-500">{user?.name || '학습자'}님의 학습 현황</p>
+        <p className="text-gray-500">
+          {currentMember?.name || '학습자'}님의 학습 현황
+          {memberTrack && <span className="text-primary-500"> · {memberTrack.name}</span>}
+        </p>
       </header>
 
       {/* 요약 카드 */}
@@ -49,7 +83,7 @@ export default function StatsPage() {
               <Flame className="w-5 h-5" />
               <span className="text-sm opacity-90">연속 학습</span>
             </div>
-            <p className="text-3xl font-bold">{SAMPLE_STATS.streak}일</p>
+            <p className="text-3xl font-bold">{stats.streak}일</p>
           </div>
 
           <div className="card">
@@ -58,8 +92,8 @@ export default function StatsPage() {
               <span className="text-sm text-gray-500">총 학습 시간</span>
             </div>
             <p className="text-3xl font-bold text-foreground">
-              {Math.floor(SAMPLE_STATS.totalMinutes / 60)}시간
-              <span className="text-lg text-gray-400"> {SAMPLE_STATS.totalMinutes % 60}분</span>
+              {Math.floor(stats.totalMinutes / 60)}시간
+              <span className="text-lg text-gray-400"> {stats.totalMinutes % 60}분</span>
             </p>
           </div>
 
@@ -68,7 +102,7 @@ export default function StatsPage() {
               <BookOpen className="w-5 h-5 text-secondary-500" />
               <span className="text-sm text-gray-500">학습한 표현</span>
             </div>
-            <p className="text-3xl font-bold text-foreground">{SAMPLE_STATS.chunksLearned}개</p>
+            <p className="text-3xl font-bold text-foreground">{stats.chunksLearned}개</p>
           </div>
 
           <div className="card">
@@ -76,7 +110,7 @@ export default function StatsPage() {
               <Target className="w-5 h-5 text-accent-500" />
               <span className="text-sm text-gray-500">롤플레이</span>
             </div>
-            <p className="text-3xl font-bold text-foreground">{SAMPLE_STATS.scenariosCompleted}회</p>
+            <p className="text-3xl font-bold text-foreground">{stats.scenariosCompleted}회</p>
           </div>
         </div>
       </section>
@@ -113,7 +147,7 @@ export default function StatsPage() {
           </div>
 
           <div className="flex items-end justify-between h-32 gap-2">
-            {SAMPLE_STATS.weeklyData.map((data, idx) => (
+            {weeklyData.map((data, idx) => (
               <div key={idx} className="flex-1 flex flex-col items-center gap-2">
                 <div
                   className={`w-full rounded-t-lg transition-all ${
@@ -133,7 +167,7 @@ export default function StatsPage() {
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-500">이번 주 평균</span>
               <span className="font-semibold text-foreground">
-                {Math.round(SAMPLE_STATS.weeklyData.reduce((a, b) => a + b.minutes, 0) / 7)}분/일
+                {Math.round(weeklyData.reduce((a, b) => a + b.minutes, 0) / 7)}분/일
               </span>
             </div>
           </div>
@@ -147,24 +181,19 @@ export default function StatsPage() {
             <Award className="w-5 h-5 text-accent-500" />
             획득한 배지
           </h3>
-          <span className="text-sm text-gray-400">{SAMPLE_STATS.badges.length}개</span>
+          <span className="text-sm text-gray-400">{earnedBadges.length}개</span>
         </div>
 
         <div className="grid grid-cols-4 gap-3">
-          {SAMPLE_STATS.badges.map((badge) => (
+          {earnedBadges.map((badge) => (
             <div key={badge.id} className="card text-center p-3">
               <span className="text-3xl">{badge.icon}</span>
               <p className="text-xs font-medium text-foreground mt-2">{badge.name}</p>
             </div>
           ))}
 
-          {/* 미획득 배지 예시 */}
-          {[
-            { name: '30일 연속', icon: '👑' },
-            { name: '100표현', icon: '🎯' },
-            { name: 'AI 마스터', icon: '🤖' },
-            { name: '완주자', icon: '🏆' },
-          ].map((badge, idx) => (
+          {/* 미획득 배지 */}
+          {lockedBadges.slice(0, 8 - earnedBadges.length).map((badge, idx) => (
             <div key={idx} className="card text-center p-3 opacity-30">
               <span className="text-3xl grayscale">{badge.icon}</span>
               <p className="text-xs font-medium text-gray-400 mt-2">{badge.name}</p>

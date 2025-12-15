@@ -8,17 +8,28 @@ import {
   Volume2,
   Info,
   Mail,
+  Globe,
 } from 'lucide-react';
-import { useLearningStore, TRACKS, useFamilyStore } from '@/stores';
+import { useLearningStore, TRACKS, useFamilyStore, useLanguageStore } from '@/stores';
+import { LANGUAGES, type LearningLanguage } from '@/types';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { members, currentMemberId } = useFamilyStore();
   const currentMember = members.find((m) => m.id === currentMemberId);
   const { currentTrack, setCurrentTrack } = useLearningStore();
+  const { currentLanguage, setLanguage } = useLanguageStore();
   const [showTrackModal, setShowTrackModal] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+
+  const currentLangInfo = LANGUAGES.find((l) => l.id === currentLanguage);
+
+  const handleLanguageChange = (langId: LearningLanguage) => {
+    setLanguage(langId);
+    setShowLanguageModal(false);
+  };
 
   const handleTrackChange = (trackId: string) => {
     const track = TRACKS.find((t) => t.id === trackId);
@@ -64,6 +75,23 @@ export default function SettingsPage() {
       <section className="px-4 mb-6">
         <h3 className="text-sm font-semibold text-gray-500 mb-2 px-1">학습 설정</h3>
         <div className="card divide-y divide-gray-100">
+          {/* 학습 언어 */}
+          <button
+            onClick={() => setShowLanguageModal(true)}
+            className="w-full flex items-center justify-between py-3"
+          >
+            <div className="flex items-center gap-3">
+              <Globe className="w-5 h-5 text-gray-400" />
+              <span className="text-foreground">학습 언어</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">
+                {currentLangInfo?.flag} {currentLangInfo?.name || '영어'}
+              </span>
+              <ChevronRight className="w-5 h-5 text-gray-300" />
+            </div>
+          </button>
+
           {/* 학습 트랙 */}
           <button
             onClick={() => setShowTrackModal(true)}
@@ -220,6 +248,42 @@ export default function SettingsPage() {
             </div>
             <button
               onClick={() => setShowTrackModal(false)}
+              className="w-full mt-4 py-3 text-gray-500"
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 언어 선택 모달 */}
+      {showLanguageModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
+          <div className="w-full bg-white rounded-t-3xl p-6">
+            <h3 className="text-lg font-bold text-foreground mb-4">학습 언어 선택</h3>
+            <div className="space-y-3">
+              {LANGUAGES.map((lang) => (
+                <button
+                  key={lang.id}
+                  onClick={() => handleLanguageChange(lang.id)}
+                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                    currentLanguage === lang.id
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{lang.flag}</span>
+                    <div>
+                      <h4 className="font-semibold text-foreground">{lang.name}</h4>
+                      <p className="text-sm text-gray-500">{lang.nativeName}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowLanguageModal(false)}
               className="w-full mt-4 py-3 text-gray-500"
             >
               취소

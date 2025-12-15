@@ -1,13 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, Flame, Target, ChevronRight, Trophy, Users, ChevronDown } from 'lucide-react';
-import { useLearningStore, useFamilyStore, TRACKS } from '@/stores';
+import { useLearningStore, useFamilyStore, TRACKS, useLanguageStore } from '@/stores';
+import { Avatar } from '@/components/common';
+import { LANGUAGES, type LearningLanguage } from '@/types';
 
 export default function HomePage() {
   const navigate = useNavigate();
   const { currentTrack, setCurrentTrack } = useLearningStore();
   const { members, currentMemberId, setCurrentMember } = useFamilyStore();
+  const { currentLanguage, setLanguage } = useLanguageStore();
   const [showFamilySelector, setShowFamilySelector] = useState(false);
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
+
+  // 현재 학습 언어 정보
+  const currentLangInfo = LANGUAGES.find(l => l.id === currentLanguage);
 
   // 현재 가족 구성원
   const currentMember = members.find(m => m.id === currentMemberId);
@@ -24,7 +31,6 @@ export default function HomePage() {
 
   // 현재 가족 구성원 데이터 사용
   const displayName = currentMember?.name || '학습자';
-  const displayAvatar = currentMember?.avatar;
   const streakDays = currentMember?.streakDays || 0;
   const dailyGoal = currentMember?.dailyGoalMinutes || 15;
   const todayMinutes = 0;
@@ -55,10 +61,13 @@ export default function HomePage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* 아바타 (가족 모드일 때) */}
-            {displayAvatar && (
-              <div className="text-3xl w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                {displayAvatar}
-              </div>
+            {currentMember && (
+              <Avatar
+                avatar={currentMember.avatar}
+                avatarUrl={currentMember.avatarUrl}
+                size="lg"
+                className="bg-primary-100"
+              />
             )}
             <div>
               <p className="text-gray-500 text-sm">안녕하세요</p>
@@ -68,17 +77,61 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* 가족 전환 버튼 */}
-          {members.length > 0 && (
-            <button
-              onClick={() => setShowFamilySelector(!showFamilySelector)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-100 hover:bg-primary-200 text-primary-700 rounded-xl text-sm font-semibold transition-colors border-2 border-primary-200"
-            >
-              <Users className="w-5 h-5" />
-              <span>프로필 전환</span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${showFamilySelector ? 'rotate-180' : ''}`} />
-            </button>
-          )}
+          <div className="flex flex-col gap-2 items-end">
+            {/* 현재 학습 언어 드롭다운 */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowLanguageSelector(!showLanguageSelector);
+                  setShowFamilySelector(false);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-xs font-medium transition-colors"
+              >
+                <span className="text-base">{currentLangInfo?.flag}</span>
+                <span>{currentLangInfo?.name}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform ${showLanguageSelector ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* 언어 선택 드롭다운 */}
+              {showLanguageSelector && (
+                <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50 min-w-[120px] animate-slide-down">
+                  {LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.id}
+                      onClick={() => {
+                        setLanguage(lang.id as LearningLanguage);
+                        setShowLanguageSelector(false);
+                      }}
+                      className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 transition-colors text-left ${
+                        currentLanguage === lang.id ? 'bg-primary-50' : ''
+                      }`}
+                    >
+                      <span className="text-lg">{lang.flag}</span>
+                      <span className="text-sm font-medium text-gray-700">{lang.name}</span>
+                      {currentLanguage === lang.id && (
+                        <span className="ml-auto text-primary-500 text-xs">✓</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 가족 전환 버튼 */}
+            {members.length > 0 && (
+              <button
+                onClick={() => {
+                  setShowFamilySelector(!showFamilySelector);
+                  setShowLanguageSelector(false);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-100 hover:bg-primary-200 text-primary-700 rounded-xl text-sm font-semibold transition-colors border-2 border-primary-200"
+              >
+                <Users className="w-5 h-5" />
+                <span>프로필 전환</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showFamilySelector ? 'rotate-180' : ''}`} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* 가족 구성원 선택 드롭다운 */}
@@ -92,9 +145,11 @@ export default function HomePage() {
                   currentMemberId === member.id ? 'bg-primary-50' : ''
                 }`}
               >
-                <span className="text-2xl w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                  {member.avatar}
-                </span>
+                <Avatar
+                  avatar={member.avatar}
+                  avatarUrl={member.avatarUrl}
+                  size="md"
+                />
                 <div className="flex-1 text-left">
                   <p className="font-medium text-foreground">{member.name}</p>
                   <p className="text-xs text-gray-500">
@@ -169,6 +224,26 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* 문자 학습 (일본어 선택 시) */}
+      {currentLanguage === 'ja' && (
+        <button
+          onClick={() => navigate('/kana')}
+          className="w-full card bg-gradient-to-r from-pink-500 to-rose-500 text-white mb-6 text-left"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">あ</span>
+                <span className="text-2xl">ア</span>
+              </div>
+              <h2 className="text-lg font-bold">히라가나 / 가타카나</h2>
+              <p className="text-sm opacity-90">일본어 문자 학습</p>
+            </div>
+            <ChevronRight className="w-6 h-6 opacity-80" />
+          </div>
+        </button>
+      )}
+
       {/* 학습 단계 미리보기 */}
       <section className="mb-6">
         <h3 className="text-lg font-bold text-foreground mb-3">학습 플로우</h3>
@@ -209,18 +284,54 @@ export default function HomePage() {
               변경 <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <div
-            className="card border-2"
+
+          {/* 메인 트랙 */}
+          <button
+            onClick={() => navigate(`/learn?track=${memberTrack.id}`)}
+            className="card border-2 mb-2 w-full text-left hover:shadow-md transition-shadow"
             style={{ borderColor: memberTrack.color }}
           >
             <div className="flex items-center gap-3">
               <span className="text-3xl">{memberTrack.icon}</span>
-              <div>
-                <h4 className="font-bold text-foreground">{memberTrack.name}</h4>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-bold text-foreground">{memberTrack.name}</h4>
+                  <span className="text-xs bg-primary-100 text-primary-600 px-2 py-0.5 rounded-full">메인</span>
+                </div>
                 <p className="text-sm text-gray-500">{memberTrack.description}</p>
               </div>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
             </div>
-          </div>
+          </button>
+
+          {/* 추가 트랙들 */}
+          {currentMember?.secondaryTracks && currentMember.secondaryTracks.length > 0 && (
+            <div className="space-y-2">
+              {currentMember.secondaryTracks.map((trackId) => {
+                const track = TRACKS.find(t => t.id === trackId);
+                if (!track) return null;
+                return (
+                  <button
+                    key={trackId}
+                    onClick={() => navigate(`/learn?track=${trackId}`)}
+                    className="card border border-gray-200 bg-gray-50 w-full text-left hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{track.icon}</span>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-foreground">{track.name}</h4>
+                          <span className="text-xs bg-secondary-100 text-secondary-600 px-2 py-0.5 rounded-full">추가</span>
+                        </div>
+                        <p className="text-xs text-gray-500">{track.description}</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </section>
       )}
 
@@ -241,6 +352,47 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      {/* 공통 트랙 - 일상생활영어회화 */}
+      <section className="mt-6">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-bold text-foreground">공통 트랙</h3>
+          <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+            모든 가족 공용
+          </span>
+        </div>
+
+        <button
+          onClick={() => navigate('/learn?track=daily-life')}
+          className="card border-2 border-green-400 bg-gradient-to-r from-green-50 to-emerald-50 w-full text-left hover:shadow-md transition-shadow"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
+              <span className="text-3xl">🏠</span>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-foreground">일상생활 영어회화</h4>
+              </div>
+              <p className="text-sm text-gray-500 mt-0.5">
+                쇼핑, 식당, 인사, 날씨 등 일상에서 바로 쓰는 표현
+              </p>
+              <div className="flex gap-2 mt-2">
+                <span className="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">
+                  🛒 쇼핑
+                </span>
+                <span className="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">
+                  🍽️ 식당
+                </span>
+                <span className="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">
+                  👋 인사
+                </span>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-green-500" />
+          </div>
+        </button>
+      </section>
     </div>
   );
 }

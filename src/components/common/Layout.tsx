@@ -25,9 +25,9 @@ export default function Layout() {
   const currentTab = navItems.find((item) => item.path === location.pathname)?.id || 'home';
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background pb-16">
       {/* 메인 컨텐츠 */}
-      <main className="flex-1 pb-20 safe-bottom">
+      <main>
         <Outlet />
       </main>
 

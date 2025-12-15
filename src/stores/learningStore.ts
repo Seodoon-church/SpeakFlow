@@ -208,4 +208,13 @@ export const TRACKS: Track[] = [
     total_weeks: 12,
     color: '#F472B6',
   },
+  // 베이커리 카페 영어
+  {
+    id: 'bakery-cafe' as TrackId,
+    name: 'Bakery & Cafe',
+    description: '베이커리 카페에서 외국인 응대 회화',
+    icon: '🥐',
+    total_weeks: 10,
+    color: '#D97706',
+  },
 ];

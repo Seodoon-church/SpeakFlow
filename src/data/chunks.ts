@@ -1821,7 +1821,316 @@ export const COSMETICS_CHUNKS: ChunkData[] = [
   },
 ];
 
-// 트랙별 청크 데이터 맵
+// 베이커리 카페 영어 청크
+export const BAKERY_CAFE_CHUNKS: ChunkData[] = [
+  // Week 1 - 인사 & 기본 주문
+  {
+    id: "bc-1-1",
+    trackId: 'bakery-cafe',
+    week: 1,
+    day: 1,
+    expression: "Welcome! What can I get for you today?",
+    meaning: "어서오세요! 오늘 뭘 드릴까요?",
+    pronunciation: "/ˈwelkəm wɒt kæn aɪ ɡet fɔː juː təˈdeɪ/",
+    example_sentence: "Welcome! What can I get for you today? — I'd like a coffee and a croissant, please.",
+    example_translation: "어서오세요! 오늘 뭘 드릴까요? — 커피랑 크루아상 주세요.",
+    tips: "외국인 손님이 들어왔을 때 기본 인사입니다.",
+  },
+  {
+    id: "bc-1-2",
+    trackId: 'bakery-cafe',
+    week: 1,
+    day: 2,
+    expression: "Hi there! Are you ready to order?",
+    meaning: "안녕하세요! 주문하시겠어요?",
+    pronunciation: "/haɪ ðeə ɑː juː ˈredi tuː ˈɔːdə/",
+    example_sentence: "Hi there! Are you ready to order? — Yes, I'll have an Americano.",
+    example_translation: "안녕하세요! 주문하시겠어요? — 네, 아메리카노 주세요.",
+    tips: "친근하게 주문을 받을 때 사용합니다.",
+  },
+  {
+    id: "bc-1-3",
+    trackId: 'bakery-cafe',
+    week: 1,
+    day: 3,
+    expression: "For here or to go?",
+    meaning: "드시고 가세요, 포장해 드릴까요?",
+    pronunciation: "/fɔː hɪə ɔːr tuː ɡəʊ/",
+    example_sentence: "For here or to go? — To go, please.",
+    example_translation: "드시고 가세요, 포장해 드릴까요? — 포장해주세요.",
+    tips: "매장 식사/포장을 물을 때 기본 표현입니다.",
+  },
+  {
+    id: "bc-1-4",
+    trackId: 'bakery-cafe',
+    week: 1,
+    day: 4,
+    expression: "Hot or iced?",
+    meaning: "따뜻한 걸로 드릴까요, 아이스로 드릴까요?",
+    pronunciation: "/hɒt ɔːr aɪst/",
+    example_sentence: "Hot or iced? — Iced, please.",
+    example_translation: "따뜻한 걸로요, 아이스로요? — 아이스로요.",
+    tips: "음료 온도를 물을 때 사용합니다.",
+  },
+  {
+    id: "bc-1-5",
+    trackId: 'bakery-cafe',
+    week: 1,
+    day: 5,
+    expression: "What size would you like?",
+    meaning: "사이즈 어떤 걸로 드릴까요?",
+    pronunciation: "/wɒt saɪz wʊd juː laɪk/",
+    example_sentence: "What size would you like? Small, medium, or large? — Medium, please.",
+    example_translation: "사이즈 어떤 걸로 드릴까요? 스몰, 미디엄, 라지? — 미디엄이요.",
+    tips: "음료 사이즈를 물을 때 사용합니다.",
+  },
+  // Week 2 - 메뉴 설명
+  {
+    id: "bc-2-1",
+    trackId: 'bakery-cafe',
+    week: 2,
+    day: 1,
+    expression: "This is freshly baked this morning.",
+    meaning: "이건 오늘 아침에 갓 구운 거예요.",
+    pronunciation: "/ðɪs ɪz ˈfreʃli beɪkt ðɪs ˈmɔːnɪŋ/",
+    example_sentence: "This croissant is freshly baked this morning. It's still warm!",
+    example_translation: "이 크루아상은 오늘 아침에 갓 구운 거예요. 아직 따뜻해요!",
+    tips: "신선한 빵을 추천할 때 사용합니다.",
+  },
+  {
+    id: "bc-2-2",
+    trackId: 'bakery-cafe',
+    week: 2,
+    day: 2,
+    expression: "Would you like it warmed up?",
+    meaning: "데워드릴까요?",
+    pronunciation: "/wʊd juː laɪk ɪt wɔːmd ʌp/",
+    example_sentence: "Would you like it warmed up? — Yes, please!",
+    example_translation: "데워드릴까요? — 네, 부탁드려요!",
+    tips: "빵이나 샌드위치를 데워줄지 물을 때 사용합니다.",
+  },
+  {
+    id: "bc-2-3",
+    trackId: 'bakery-cafe',
+    week: 2,
+    day: 3,
+    expression: "This is our best seller.",
+    meaning: "이게 저희 베스트셀러예요.",
+    pronunciation: "/ðɪs ɪz ˈaʊə best ˈselə/",
+    example_sentence: "The red velvet cake is our best seller. Would you like to try it?",
+    example_translation: "레드벨벳 케이크가 저희 베스트셀러예요. 드셔보시겠어요?",
+    tips: "인기 메뉴를 추천할 때 사용합니다.",
+  },
+  {
+    id: "bc-2-4",
+    trackId: 'bakery-cafe',
+    week: 2,
+    day: 4,
+    expression: "It's soft and fluffy inside.",
+    meaning: "속이 부드럽고 폭신해요.",
+    pronunciation: "/ɪts sɒft ænd ˈflʌfi ɪnˈsaɪd/",
+    example_sentence: "This brioche is soft and fluffy inside. Perfect with butter!",
+    example_translation: "이 브리오슈는 속이 부드럽고 폭신해요. 버터랑 딱이에요!",
+    tips: "빵 식감을 설명할 때 사용합니다.",
+  },
+  {
+    id: "bc-2-5",
+    trackId: 'bakery-cafe',
+    week: 2,
+    day: 5,
+    expression: "It has a crispy crust.",
+    meaning: "겉이 바삭해요.",
+    pronunciation: "/ɪt hæz ə ˈkrɪspi krʌst/",
+    example_sentence: "Our baguette has a crispy crust but soft inside.",
+    example_translation: "저희 바게트는 겉이 바삭하고 속은 부드러워요.",
+    tips: "바삭한 빵을 설명할 때 사용합니다.",
+  },
+  // Week 3 - 음료 커스터마이징
+  {
+    id: "bc-3-1",
+    trackId: 'bakery-cafe',
+    week: 3,
+    day: 1,
+    expression: "Would you like any syrup or extra shots?",
+    meaning: "시럽이나 샷 추가하시겠어요?",
+    pronunciation: "/wʊd juː laɪk ˈeni ˈsɪrəp ɔːr ˈekstrə ʃɒts/",
+    example_sentence: "Would you like any syrup or extra shots? — One extra shot, please.",
+    example_translation: "시럽이나 샷 추가하시겠어요? — 샷 하나 추가해주세요.",
+    tips: "커스터마이징 옵션을 제안할 때 사용합니다.",
+  },
+  {
+    id: "bc-3-2",
+    trackId: 'bakery-cafe',
+    week: 3,
+    day: 2,
+    expression: "We have oat milk, soy milk, and almond milk.",
+    meaning: "오트밀크, 두유, 아몬드밀크 있어요.",
+    pronunciation: "/wiː hæv əʊt mɪlk sɔɪ mɪlk ænd ˈɑːmənd mɪlk/",
+    example_sentence: "We have oat milk, soy milk, and almond milk. Which one would you prefer?",
+    example_translation: "오트밀크, 두유, 아몬드밀크 있어요. 어떤 걸로 하시겠어요?",
+    tips: "대체 우유 옵션을 안내할 때 사용합니다.",
+  },
+  {
+    id: "bc-3-3",
+    trackId: 'bakery-cafe',
+    week: 3,
+    day: 3,
+    expression: "Do you have any allergies?",
+    meaning: "혹시 알레르기 있으세요?",
+    pronunciation: "/duː juː hæv ˈeni ˈæləʤiz/",
+    example_sentence: "Do you have any allergies I should know about? — Yes, I'm allergic to nuts.",
+    example_translation: "혹시 알레르기 있으세요? — 네, 견과류 알레르기가 있어요.",
+    tips: "알레르기를 확인할 때 사용합니다.",
+  },
+  {
+    id: "bc-3-4",
+    trackId: 'bakery-cafe',
+    week: 3,
+    day: 4,
+    expression: "This contains nuts.",
+    meaning: "이건 견과류가 들어있어요.",
+    pronunciation: "/ðɪs kənˈteɪnz nʌts/",
+    example_sentence: "Just so you know, this contains nuts.",
+    example_translation: "참고로, 이건 견과류가 들어있어요.",
+    tips: "알레르기 유발 성분을 안내할 때 사용합니다.",
+  },
+  {
+    id: "bc-3-5",
+    trackId: 'bakery-cafe',
+    week: 3,
+    day: 5,
+    expression: "We have gluten-free options.",
+    meaning: "글루텐프리 메뉴도 있어요.",
+    pronunciation: "/wiː hæv ˈɡluːtən friː ˈɒpʃənz/",
+    example_sentence: "We have gluten-free options. Would you like to see them?",
+    example_translation: "글루텐프리 메뉴도 있어요. 보여드릴까요?",
+    tips: "식이 제한이 있는 손님에게 대안을 제안할 때 사용합니다.",
+  },
+  // Week 4 - 결제 & 마무리
+  {
+    id: "bc-4-1",
+    trackId: 'bakery-cafe',
+    week: 4,
+    day: 1,
+    expression: "That'll be 8,500 won, please.",
+    meaning: "8,500원입니다.",
+    pronunciation: "/ðæt wɪl biː eɪt ˈθaʊzənd faɪv ˈhʌndrəd wʌn pliːz/",
+    example_sentence: "That'll be 8,500 won, please. — Can I pay by card?",
+    example_translation: "8,500원입니다. — 카드로 결제해도 될까요?",
+    tips: "금액을 안내할 때 사용합니다.",
+  },
+  {
+    id: "bc-4-2",
+    trackId: 'bakery-cafe',
+    week: 4,
+    day: 2,
+    expression: "Cash or card?",
+    meaning: "현금이요, 카드요?",
+    pronunciation: "/kæʃ ɔːr kɑːd/",
+    example_sentence: "Cash or card? — Card, please.",
+    example_translation: "현금이요, 카드요? — 카드요.",
+    tips: "결제 방법을 물을 때 사용합니다.",
+  },
+  {
+    id: "bc-4-3",
+    trackId: 'bakery-cafe',
+    week: 4,
+    day: 3,
+    expression: "Enjoy your meal!",
+    meaning: "맛있게 드세요!",
+    pronunciation: "/ɪnˈʤɔɪ jɔː miːl/",
+    example_sentence: "Here you go. Enjoy your meal!",
+    example_translation: "여기요. 맛있게 드세요!",
+    tips: "음식을 전달할 때 기본 인사입니다.",
+  },
+  {
+    id: "bc-4-4",
+    trackId: 'bakery-cafe',
+    week: 4,
+    day: 4,
+    expression: "Have a great day!",
+    meaning: "좋은 하루 보내세요!",
+    pronunciation: "/hæv ə ɡreɪt deɪ/",
+    example_sentence: "Thank you for coming! Have a great day!",
+    example_translation: "방문해주셔서 감사합니다! 좋은 하루 보내세요!",
+    tips: "손님이 나갈 때 하는 인사입니다.",
+  },
+  {
+    id: "bc-4-5",
+    trackId: 'bakery-cafe',
+    week: 4,
+    day: 5,
+    expression: "See you again!",
+    meaning: "또 오세요!",
+    pronunciation: "/siː juː əˈɡen/",
+    example_sentence: "Thanks for visiting! See you again!",
+    example_translation: "방문 감사합니다! 또 오세요!",
+    tips: "재방문을 권유하는 인사입니다.",
+  },
+  // Week 5 - 문제 해결
+  {
+    id: "bc-5-1",
+    trackId: 'bakery-cafe',
+    week: 5,
+    day: 1,
+    expression: "I'm sorry, we're out of that.",
+    meaning: "죄송해요, 그건 다 팔렸어요.",
+    pronunciation: "/aɪm ˈsɒri wiːə aʊt əv ðæt/",
+    example_sentence: "I'm sorry, we're out of chocolate croissants. Can I suggest something else?",
+    example_translation: "죄송해요, 초코 크루아상은 다 팔렸어요. 다른 거 추천해드릴까요?",
+    tips: "품절 상황을 안내할 때 사용합니다.",
+  },
+  {
+    id: "bc-5-2",
+    trackId: 'bakery-cafe',
+    week: 5,
+    day: 2,
+    expression: "Would you like something else instead?",
+    meaning: "대신 다른 거 드릴까요?",
+    pronunciation: "/wʊd juː laɪk ˈsʌmθɪŋ els ɪnˈsted/",
+    example_sentence: "We don't have that today. Would you like something else instead?",
+    example_translation: "오늘은 그게 없어요. 대신 다른 거 드릴까요?",
+    tips: "대안을 제안할 때 사용합니다.",
+  },
+  {
+    id: "bc-5-3",
+    trackId: 'bakery-cafe',
+    week: 5,
+    day: 3,
+    expression: "Let me check for you.",
+    meaning: "확인해 드릴게요.",
+    pronunciation: "/let miː ʧek fɔː juː/",
+    example_sentence: "Let me check for you. One moment, please.",
+    example_translation: "확인해 드릴게요. 잠시만요.",
+    tips: "뭔가를 확인할 때 사용합니다.",
+  },
+  {
+    id: "bc-5-4",
+    trackId: 'bakery-cafe',
+    week: 5,
+    day: 4,
+    expression: "I'm sorry for the wait.",
+    meaning: "기다리시게 해서 죄송해요.",
+    pronunciation: "/aɪm ˈsɒri fɔː ðə weɪt/",
+    example_sentence: "I'm sorry for the wait. Here's your order!",
+    example_translation: "기다리시게 해서 죄송해요. 여기 주문하신 거예요!",
+    tips: "오래 기다린 손님에게 사과할 때 사용합니다.",
+  },
+  {
+    id: "bc-5-5",
+    trackId: 'bakery-cafe',
+    week: 5,
+    day: 5,
+    expression: "Take your time, no rush!",
+    meaning: "천천히 고르세요, 급하지 않아요!",
+    pronunciation: "/teɪk jɔː taɪm nəʊ rʌʃ/",
+    example_sentence: "Take your time, no rush! Let me know when you're ready.",
+    example_translation: "천천히 고르세요, 급하지 않아요! 준비되시면 말씀해주세요.",
+    tips: "메뉴를 고르는 손님에게 여유를 줄 때 사용합니다.",
+  },
+];
+
+// 트랙별 청크 데이터 맵 (영어)
 export const CHUNKS_BY_TRACK: Record<TrackId, ChunkData[]> = {
   'daily-life': DAILY_LIFE_CHUNKS,
   'beauty-tech': BEAUTY_TECH_CHUNKS,
@@ -1830,14 +2139,55 @@ export const CHUNKS_BY_TRACK: Record<TrackId, ChunkData[]> = {
   'travel': TRAVEL_CHUNKS,
   'kids': [], // 추후 추가
   'cosmetics': COSMETICS_CHUNKS,
+  'bakery-cafe': BAKERY_CAFE_CHUNKS,
 };
 
-// 오늘의 학습 청크 가져오기
-export function getTodayChunks(trackId: TrackId, count: number = 3): ChunkData[] {
-  const chunks = CHUNKS_BY_TRACK[trackId] || [];
+// 일본어 청크 데이터
+import { JAPANESE_DAILY_LIFE_CHUNKS, JAPANESE_BUSINESS_CHUNKS, JAPANESE_TRAVEL_CHUNKS } from './chunksJapanese';
+
+export const JAPANESE_CHUNKS_BY_TRACK: Record<TrackId, ChunkData[]> = {
+  'daily-life': JAPANESE_DAILY_LIFE_CHUNKS,
+  'beauty-tech': [], // 추후 추가
+  'business': JAPANESE_BUSINESS_CHUNKS,
+  'academic': [], // 추후 추가
+  'travel': JAPANESE_TRAVEL_CHUNKS,
+  'kids': [],
+  'cosmetics': [],
+  'bakery-cafe': [],
+};
+
+// 중국어 청크 데이터
+import { CHINESE_DAILY_LIFE_CHUNKS, CHINESE_BUSINESS_CHUNKS, CHINESE_TRAVEL_CHUNKS } from './chunksChinese';
+
+export const CHINESE_CHUNKS_BY_TRACK: Record<TrackId, ChunkData[]> = {
+  'daily-life': CHINESE_DAILY_LIFE_CHUNKS,
+  'beauty-tech': [], // 추후 추가
+  'business': CHINESE_BUSINESS_CHUNKS,
+  'academic': [], // 추후 추가
+  'travel': CHINESE_TRAVEL_CHUNKS,
+  'kids': [],
+  'cosmetics': [],
+  'bakery-cafe': [],
+};
+
+// 언어별 청크 맵
+import type { LearningLanguage } from '@/types';
+
+export const CHUNKS_BY_LANGUAGE: Record<LearningLanguage, Record<TrackId, ChunkData[]>> = {
+  'en': CHUNKS_BY_TRACK,
+  'ja': JAPANESE_CHUNKS_BY_TRACK,
+  'zh': CHINESE_CHUNKS_BY_TRACK,
+};
+
+// 오늘의 학습 청크 가져오기 (언어 지원)
+export function getTodayChunks(trackId: TrackId, count: number = 3, language: LearningLanguage = 'en'): ChunkData[] {
+  const languageChunks = CHUNKS_BY_LANGUAGE[language] || CHUNKS_BY_TRACK;
+  const chunks = languageChunks[trackId] || [];
+
   if (chunks.length === 0) {
-    // 해당 트랙에 데이터가 없으면 기본 생활 영어 반환
-    return DAILY_LIFE_CHUNKS.slice(0, count);
+    // 해당 트랙에 데이터가 없으면 기본 생활 회화 반환
+    const defaultChunks = languageChunks['daily-life'] || DAILY_LIFE_CHUNKS;
+    return defaultChunks.slice(0, count);
   }
   // 간단히 처음 count개 반환 (실제로는 학습 진도에 따라 결정)
   return chunks.slice(0, count);

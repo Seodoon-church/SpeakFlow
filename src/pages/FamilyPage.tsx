@@ -11,6 +11,7 @@ import {
   X
 } from 'lucide-react';
 import { useFamilyStore, AVATAR_EMOJIS, TRACKS, useUIStore } from '@/stores';
+import { Avatar } from '@/components/common';
 import type { TrackId } from '@/types';
 
 export default function FamilyPage() {
@@ -129,9 +130,12 @@ export default function FamilyPage() {
                   {/* 아바타 */}
                   <button
                     onClick={() => handleSelectMember(member.id)}
-                    className="text-4xl w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center"
                   >
-                    {member.avatar}
+                    <Avatar
+                      avatar={member.avatar}
+                      avatarUrl={member.avatarUrl}
+                      size="xl"
+                    />
                   </button>
 
                   {/* 정보 */}
@@ -269,9 +273,9 @@ export default function FamilyPage() {
             {/* 메인 트랙 선택 */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                메인 학습 트랙
+                메인 학습 트랙 <span className="text-xs text-gray-400">(스크롤하여 더 보기)</span>
               </label>
-              <div className="space-y-2 max-h-[30vh] overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1 border border-gray-100 rounded-xl p-2">
                 {TRACKS.map((track) => {
                   const isSelected =
                     (editingMember

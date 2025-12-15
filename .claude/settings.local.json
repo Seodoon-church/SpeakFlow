@@ -34,7 +34,18 @@
       "Bash(findstr:*)",
       "Bash(ss:*)",
       "Bash(firebase deploy:*)",
-      "Bash(docker-compose up:*)"
+      "Bash(docker-compose up:*)",
+      "Bash(netstat:*)",
+      "Bash(cmd //c \"taskkill /F /PID 23676\")",
+      "Bash(copy:*)",
+      "Bash(curl:*)",
+      "Bash(git reset:*)",
+      "Bash(firebase --version:*)",
+      "Bash(firebase login:list:*)",
+      "Bash(firebase use:*)",
+      "Bash(firebase apps:list:*)",
+      "Bash(firebase apps:sdkconfig:*)",
+      "Bash(firebase experiments:enable:*)"
     ]
   }
 }

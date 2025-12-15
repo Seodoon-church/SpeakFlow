@@ -1,3 +1,21 @@
+// 학습 언어 타입
+export type LearningLanguage = 'en' | 'ja' | 'zh';
+
+export interface LanguageInfo {
+  id: LearningLanguage;
+  name: string;
+  nativeName: string;
+  flag: string;
+  speechCode: string; // Web Speech API 언어 코드
+  ttsVoice?: string;
+}
+
+export const LANGUAGES: LanguageInfo[] = [
+  { id: 'en', name: '영어', nativeName: 'English', flag: '🇺🇸', speechCode: 'en-US' },
+  { id: 'ja', name: '일본어', nativeName: '日本語', flag: '🇯🇵', speechCode: 'ja-JP' },
+  { id: 'zh', name: '중국어', nativeName: '中文', flag: '🇨🇳', speechCode: 'zh-CN' },
+];
+
 // 사용자 관련 타입
 export interface User {
   id: string;
@@ -12,7 +30,7 @@ export interface User {
 }
 
 // 학습 트랙 타입
-export type TrackId = 'daily-life' | 'beauty-tech' | 'business' | 'academic' | 'travel' | 'kids' | 'cosmetics';
+export type TrackId = 'daily-life' | 'beauty-tech' | 'business' | 'academic' | 'travel' | 'kids' | 'cosmetics' | 'bakery-cafe';
 
 export interface Track {
   id: TrackId;

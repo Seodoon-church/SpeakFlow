@@ -29,7 +29,7 @@ export default function OnboardingPage() {
         setCurrentTrack(track);
       }
       setOnboarded(true);
-      navigate('/');
+      navigate('/home');
     }
   };
 
