@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Mic,
@@ -10,10 +11,12 @@ import {
   CheckCircle2,
   Globe,
   Zap,
+  X,
 } from 'lucide-react';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const [showVideo, setShowVideo] = useState(false);
 
   const features = [
     {
@@ -127,7 +130,10 @@ export default function LandingPage() {
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </span>
             </button>
-            <button className="group w-full sm:w-auto px-8 py-4 bg-white text-gray-700 rounded-2xl font-semibold text-lg border-2 border-gray-100 hover:border-primary-200 hover:bg-primary-50 transition-all">
+            <button
+              onClick={() => setShowVideo(true)}
+              className="group w-full sm:w-auto px-8 py-4 bg-white text-gray-700 rounded-2xl font-semibold text-lg border-2 border-gray-100 hover:border-primary-200 hover:bg-primary-50 transition-all"
+            >
               <span className="flex items-center justify-center gap-2">
                 <Play className="w-5 h-5 text-primary-500" />
                 소개 영상 보기
@@ -340,6 +346,34 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* 소개 영상 모달 */}
+      {showVideo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onClick={() => setShowVideo(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowVideo(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <video
+              src="/intro.mp4"
+              controls
+              autoPlay
+              className="w-full aspect-video"
+            >
+              브라우저가 비디오 태그를 지원하지 않습니다.
+            </video>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
