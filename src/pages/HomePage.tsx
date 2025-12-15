@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, Flame, Target, ChevronRight, Trophy, Users, ChevronDown } from 'lucide-react';
 import { useAuthStore, useLearningStore, useFamilyStore, TRACKS } from '@/stores';
@@ -12,6 +12,16 @@ export default function HomePage() {
 
   // 현재 가족 구성원
   const currentMember = members.find(m => m.id === currentMemberId);
+
+  // 가족 구성원의 트랙으로 currentTrack 동기화
+  useEffect(() => {
+    if (currentMember) {
+      const track = TRACKS.find(t => t.id === currentMember.trackId);
+      if (track && track.id !== currentTrack?.id) {
+        setCurrentTrack(track);
+      }
+    }
+  }, [currentMember, currentTrack?.id, setCurrentTrack]);
 
   // 가족 모드인 경우 해당 구성원의 데이터 사용
   const displayName = currentMember?.name || user?.name || '학습자';
