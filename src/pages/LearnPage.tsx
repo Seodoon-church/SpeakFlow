@@ -411,7 +411,15 @@ export default function LearnPage() {
 
         {/* 예문 */}
         <div className="card mb-4">
-          <p className="text-sm text-gray-400 mb-2">예문</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-gray-400">예문</p>
+            <button
+              onClick={() => handlePlayAudio(currentChunk.example_sentence)}
+              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+            >
+              <Volume2 className="w-4 h-4" />
+            </button>
+          </div>
           <p className="text-foreground mb-2">{currentChunk.example_sentence}</p>
           <p className="text-sm text-gray-500">{currentChunk.example_translation}</p>
         </div>

@@ -12,11 +12,25 @@ import {
   Globe,
   Zap,
   X,
+  ChevronDown,
 } from 'lucide-react';
+import { useFamilyStore, TRACKS } from '@/stores';
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const [showVideo, setShowVideo] = useState(false);
+  const [showProfileSelector, setShowProfileSelector] = useState(false);
+  const { members, setCurrentMember, currentMemberId } = useFamilyStore();
+
+  const handleSelectProfile = (memberId: string) => {
+    setCurrentMember(memberId);
+    setShowProfileSelector(false);
+    navigate('/home');
+  };
+
+  const getTrackName = (trackId: string) => {
+    return TRACKS.find(t => t.id === trackId)?.name || trackId;
+  };
 
   const features = [
     {
@@ -63,20 +77,13 @@ export default function LandingPage() {
             </div>
             <span className="text-xl font-bold text-foreground">SpeakFlow</span>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/login')}
-              className="px-4 py-2 text-gray-600 hover:text-foreground font-medium transition-colors"
-            >
-              로그인
-            </button>
-            <button
-              onClick={() => navigate('/login')}
-              className="px-5 py-2 bg-primary-500 text-white rounded-full font-medium hover:bg-primary-600 transition-colors"
-            >
-              시작하기
-            </button>
-          </div>
+          <button
+            onClick={() => setShowProfileSelector(true)}
+            className="px-5 py-2 bg-primary-500 text-white rounded-full font-medium hover:bg-primary-600 transition-colors flex items-center gap-2"
+          >
+            <span>시작하기</span>
+            <ChevronDown className="w-4 h-4" />
+          </button>
         </div>
       </nav>
 
@@ -122,11 +129,11 @@ export default function LandingPage() {
           {/* CTA 버튼 */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => setShowProfileSelector(true)}
               className="group w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl font-semibold text-lg shadow-xl shadow-primary-200 hover:shadow-2xl hover:shadow-primary-300 transition-all hover:scale-105"
             >
               <span className="flex items-center justify-center gap-2">
-                무료로 시작하기
+                프로필 선택하고 시작하기
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </span>
             </button>
@@ -310,10 +317,10 @@ export default function LandingPage() {
                 <br />첫 7일은 무료입니다.
               </p>
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => setShowProfileSelector(true)}
                 className="px-10 py-4 bg-white text-primary-600 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-colors inline-flex items-center gap-2"
               >
-                무료 체험 시작
+                프로필 선택하고 시작하기
                 <ArrowRight className="w-5 h-5" />
               </button>
             </div>
@@ -371,6 +378,79 @@ export default function LandingPage() {
             >
               브라우저가 비디오 태그를 지원하지 않습니다.
             </video>
+          </div>
+        </div>
+      )}
+
+      {/* 프로필 선택 모달 */}
+      {showProfileSelector && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setShowProfileSelector(false)}
+        >
+          <div
+            className="relative w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowProfileSelector(false)}
+              className="absolute top-4 right-4 z-10 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="p-6 bg-gradient-to-br from-primary-500 to-primary-600 text-white">
+              <h2 className="text-2xl font-bold mb-2">누가 학습할까요?</h2>
+              <p className="text-white/80 text-sm">프로필을 선택하면 맞춤 학습이 시작됩니다</p>
+            </div>
+
+            <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto">
+              {members.map((member) => (
+                <button
+                  key={member.id}
+                  onClick={() => handleSelectProfile(member.id)}
+                  className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all ${
+                    currentMemberId === member.id
+                      ? 'bg-primary-50 border-2 border-primary-500'
+                      : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-3xl shadow-sm">
+                    {member.avatar}
+                  </div>
+                  <div className="flex-1 text-left">
+                    <h3 className="font-bold text-foreground text-lg">{member.name}</h3>
+                    <p className="text-sm text-gray-500">
+                      {getTrackName(member.trackId)}
+                      {member.secondaryTracks && member.secondaryTracks.length > 0 && (
+                        <span className="text-primary-500"> +{member.secondaryTracks.length}</span>
+                      )}
+                    </p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-xs text-gray-400">🔥 {member.streakDays}일 연속</span>
+                      <span className="text-xs text-gray-400">📚 {member.chunksLearned}개 학습</span>
+                    </div>
+                  </div>
+                  {currentMemberId === member.id && (
+                    <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-4 bg-gray-50 border-t">
+              <button
+                onClick={() => {
+                  setShowProfileSelector(false);
+                  navigate('/family');
+                }}
+                className="w-full py-3 text-primary-600 font-medium hover:bg-primary-50 rounded-xl transition-colors"
+              >
+                + 새 프로필 만들기
+              </button>
+            </div>
           </div>
         </div>
       )}

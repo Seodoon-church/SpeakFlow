@@ -6,7 +6,8 @@ export interface FamilyMember {
   id: string;
   name: string;
   avatar: string; // emoji
-  trackId: TrackId;
+  trackId: TrackId; // 메인 트랙
+  secondaryTracks?: TrackId[]; // 추가 학습 트랙
   dailyGoalMinutes: number;
   streakDays: number;
   totalMinutesLearned: number;
@@ -35,6 +36,7 @@ const DEFAULT_FAMILY_MEMBERS: FamilyMember[] = [
     name: 'David',
     avatar: '👨',
     trackId: 'business',
+    secondaryTracks: ['travel'], // 비즈니스 + 여행
     dailyGoalMinutes: 15,
     streakDays: 7,
     totalMinutesLearned: 120,
@@ -47,6 +49,7 @@ const DEFAULT_FAMILY_MEMBERS: FamilyMember[] = [
     name: 'Tina',
     avatar: '👩',
     trackId: 'beauty-tech',
+    secondaryTracks: [],
     dailyGoalMinutes: 20,
     streakDays: 5,
     totalMinutesLearned: 90,
@@ -59,6 +62,7 @@ const DEFAULT_FAMILY_MEMBERS: FamilyMember[] = [
     name: 'Dani',
     avatar: '👦',
     trackId: 'academic',
+    secondaryTracks: [],
     dailyGoalMinutes: 20,
     streakDays: 3,
     totalMinutesLearned: 45,
@@ -70,7 +74,8 @@ const DEFAULT_FAMILY_MEMBERS: FamilyMember[] = [
     id: 'member-mune',
     name: 'Mune',
     avatar: '👧',
-    trackId: 'business',
+    trackId: 'travel',
+    secondaryTracks: [],
     dailyGoalMinutes: 15,
     streakDays: 4,
     totalMinutesLearned: 60,
@@ -83,6 +88,7 @@ const DEFAULT_FAMILY_MEMBERS: FamilyMember[] = [
     name: 'Jolie',
     avatar: '👩‍🦰',
     trackId: 'cosmetics',
+    secondaryTracks: [],
     dailyGoalMinutes: 15,
     streakDays: 0,
     totalMinutesLearned: 0,
@@ -175,10 +181,10 @@ export const useFamilyStore = create<FamilyState>()(
     }),
     {
       name: 'speakflow-family',
-      version: 2,
+      version: 4,
       migrate: (persistedState: unknown, version: number) => {
-        if (version < 2) {
-          // 이전 버전이면 기본 가족 구성원으로 리셋
+        if (version < 4) {
+          // 버전 4: secondaryTracks 추가, David에 travel 추가
           return {
             members: DEFAULT_FAMILY_MEMBERS,
             currentMemberId: 'member-david',

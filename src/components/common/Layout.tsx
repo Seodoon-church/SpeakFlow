@@ -1,11 +1,11 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Home, BookOpen, BarChart3, Settings, Mic } from 'lucide-react';
-import { useUIStore } from '@/stores';
+import { Home, BookOpen, MessageCircle, BarChart3, Settings } from 'lucide-react';
+import { useUIStore, useChatStore } from '@/stores';
 
 const navItems = [
-  { id: 'home', icon: Home, label: '홈', path: '/' },
+  { id: 'home', icon: Home, label: '홈', path: '/home' },
   { id: 'learn', icon: BookOpen, label: '학습', path: '/learn' },
-  { id: 'roleplay', icon: Mic, label: '롤플레이', path: '/roleplay' },
+  { id: 'chat', icon: MessageCircle, label: '채팅', path: '/chat' },
   { id: 'stats', icon: BarChart3, label: '통계', path: '/stats' },
   { id: 'settings', icon: Settings, label: '설정', path: '/settings' },
 ];
@@ -14,6 +14,7 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { setActiveTab } = useUIStore();
+  const { unreadCount } = useChatStore();
 
   const handleNavClick = (item: typeof navItems[0]) => {
     setActiveTab(item.id);
@@ -36,18 +37,26 @@ export default function Layout() {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
+            const showBadge = item.id === 'chat' && unreadCount > 0;
 
             return (
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item)}
-                className={`flex flex-col items-center justify-center w-full h-full transition-colors ${
+                className={`relative flex flex-col items-center justify-center w-full h-full transition-colors ${
                   isActive
                     ? 'text-primary-500'
                     : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
-                <Icon className="w-6 h-6" strokeWidth={isActive ? 2.5 : 2} />
+                <div className="relative">
+                  <Icon className="w-6 h-6" strokeWidth={isActive ? 2.5 : 2} />
+                  {showBadge && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
                 <span className={`text-xs mt-1 ${isActive ? 'font-semibold' : ''}`}>
                   {item.label}
                 </span>

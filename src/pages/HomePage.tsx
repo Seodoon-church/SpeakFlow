@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, Flame, Target, ChevronRight, Trophy, Users, ChevronDown } from 'lucide-react';
-import { useAuthStore, useLearningStore, useFamilyStore, TRACKS } from '@/stores';
+import { useLearningStore, useFamilyStore, TRACKS } from '@/stores';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   const { currentTrack, setCurrentTrack } = useLearningStore();
   const { members, currentMemberId, setCurrentMember } = useFamilyStore();
   const [showFamilySelector, setShowFamilySelector] = useState(false);
@@ -23,11 +22,11 @@ export default function HomePage() {
     }
   }, [currentMember, currentTrack?.id, setCurrentTrack]);
 
-  // 가족 모드인 경우 해당 구성원의 데이터 사용
-  const displayName = currentMember?.name || user?.name || '학습자';
+  // 현재 가족 구성원 데이터 사용
+  const displayName = currentMember?.name || '학습자';
   const displayAvatar = currentMember?.avatar;
-  const streakDays = currentMember?.streakDays || user?.streak_days || 0;
-  const dailyGoal = currentMember?.dailyGoalMinutes || user?.daily_goal_minutes || 15;
+  const streakDays = currentMember?.streakDays || 0;
+  const dailyGoal = currentMember?.dailyGoalMinutes || 15;
   const todayMinutes = 0;
   const progressPercent = Math.min((todayMinutes / dailyGoal) * 100, 100);
 

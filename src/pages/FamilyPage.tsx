@@ -64,7 +64,7 @@ export default function FamilyPage() {
     if (member) {
       showToast({ type: 'success', message: `${member.name}님으로 전환되었습니다.` });
     }
-    navigate('/');
+    navigate('/home');
   };
 
   const getTrackName = (trackId: TrackId) => {
@@ -196,7 +196,7 @@ export default function FamilyPage() {
       {/* 추가/수정 모달 */}
       {(showAddModal || editingMember) && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-          <div className="w-full bg-white rounded-t-3xl p-6 max-h-[90vh] overflow-y-auto animate-slide-up">
+          <div className="w-full bg-white rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto animate-slide-up pb-8">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-foreground">
                 {editingMember ? '프로필 수정' : '가족 추가'}
@@ -266,12 +266,12 @@ export default function FamilyPage() {
               />
             </div>
 
-            {/* 트랙 선택 */}
+            {/* 메인 트랙 선택 */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                학습 트랙
+                메인 학습 트랙
               </label>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[30vh] overflow-y-auto pr-1">
                 {TRACKS.map((track) => {
                   const isSelected =
                     (editingMember
@@ -302,6 +302,54 @@ export default function FamilyPage() {
                       {isSelected && (
                         <Check className="w-5 h-5 text-primary-500" />
                       )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 추가 트랙 선택 */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                추가 학습 트랙 (선택사항)
+              </label>
+              <p className="text-xs text-gray-500 mb-2">메인 트랙 외에 함께 학습할 트랙을 선택하세요</p>
+              <div className="flex flex-wrap gap-2">
+                {TRACKS.map((track) => {
+                  const currentMainTrack = editingMember
+                    ? members.find(m => m.id === editingMember)?.trackId
+                    : newMember.trackId;
+                  const currentSecondary = editingMember
+                    ? members.find(m => m.id === editingMember)?.secondaryTracks || []
+                    : [];
+
+                  // 메인 트랙은 추가 트랙에서 제외
+                  if (track.id === currentMainTrack) return null;
+
+                  const isSelected = currentSecondary.includes(track.id);
+
+                  return (
+                    <button
+                      key={track.id}
+                      onClick={() => {
+                        if (editingMember) {
+                          const member = members.find(m => m.id === editingMember);
+                          const current = member?.secondaryTracks || [];
+                          const updated = isSelected
+                            ? current.filter(t => t !== track.id)
+                            : [...current, track.id];
+                          updateMember(editingMember, { secondaryTracks: updated });
+                        }
+                      }}
+                      className={`px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-all ${
+                        isSelected
+                          ? 'bg-secondary-100 border-2 border-secondary-500 text-secondary-700'
+                          : 'bg-gray-100 border-2 border-transparent text-gray-600'
+                      }`}
+                    >
+                      <span>{track.icon}</span>
+                      <span>{track.name}</span>
+                      {isSelected && <Check className="w-4 h-4" />}
                     </button>
                   );
                 })}

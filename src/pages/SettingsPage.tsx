@@ -1,34 +1,24 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  User,
   Bell,
   BookOpen,
   Users,
   ChevronRight,
-  LogOut,
   Volume2,
   Info,
   Mail,
 } from 'lucide-react';
-import { useAuthStore, useLearningStore, TRACKS } from '@/stores';
-import { auth } from '@/lib/supabase';
+import { useLearningStore, TRACKS, useFamilyStore } from '@/stores';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { members, currentMemberId } = useFamilyStore();
+  const currentMember = members.find((m) => m.id === currentMemberId);
   const { currentTrack, setCurrentTrack } = useLearningStore();
   const [showTrackModal, setShowTrackModal] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
-
-  const handleLogout = async () => {
-    if (confirm('로그아웃 하시겠습니까?')) {
-      await auth.signOut();
-      logout();
-      navigate('/login');
-    }
-  };
 
   const handleTrackChange = (trackId: string) => {
     const track = TRACKS.find((t) => t.id === trackId);
@@ -50,16 +40,21 @@ export default function SettingsPage() {
         <div className="card">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
-              <User className="w-8 h-8 text-primary-500" />
+              <span className="text-3xl">{currentMember?.avatar || '👤'}</span>
             </div>
             <div className="flex-1">
               <h2 className="font-bold text-lg text-foreground">
-                {user?.name || '사용자'}
+                {currentMember?.name || '프로필 선택'}
               </h2>
-              <p className="text-sm text-gray-500">{user?.email || 'email@example.com'}</p>
+              <p className="text-sm text-gray-500">
+                {currentMember ? `${currentMember.trackId} 트랙` : '가족 구성원을 선택하세요'}
+              </p>
             </div>
-            <button className="text-primary-500 text-sm font-medium">
-              편집
+            <button
+              onClick={() => navigate('/family')}
+              className="text-primary-500 text-sm font-medium"
+            >
+              변경
             </button>
           </div>
         </div>
@@ -94,7 +89,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">
-                {user?.daily_goal_minutes || 15}분
+                {currentMember?.dailyGoalMinutes || 15}분
               </span>
               <ChevronRight className="w-5 h-5 text-gray-300" />
             </div>
@@ -195,17 +190,6 @@ export default function SettingsPage() {
             <ChevronRight className="w-5 h-5 text-gray-300" />
           </button>
         </div>
-      </section>
-
-      {/* 로그아웃 */}
-      <section className="px-4">
-        <button
-          onClick={handleLogout}
-          className="w-full card flex items-center justify-center gap-2 py-3 text-red-500"
-        >
-          <LogOut className="w-5 h-5" />
-          <span>로그아웃</span>
-        </button>
       </section>
 
       {/* 트랙 선택 모달 */}
