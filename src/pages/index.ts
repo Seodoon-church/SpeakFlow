@@ -12,3 +12,5 @@ export { default as LeaderboardPage } from './LeaderboardPage';
 export { default as BadgePage } from './BadgePage';
 export { default as JContentPage } from './JContentPage';
 export { default as VocabularyPage } from './VocabularyPage';
+export { default as JourneyPage } from './JourneyPage';
+export { default as ScenarioPage } from './ScenarioPage';

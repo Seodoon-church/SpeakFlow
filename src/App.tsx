@@ -15,6 +15,8 @@ import {
   BadgePage,
   JContentPage,
   VocabularyPage,
+  JourneyPage,
+  ScenarioPage,
 } from '@/pages';
 
 function App() {
@@ -44,6 +46,8 @@ function App() {
         <Route path="/badges" element={<BadgePage />} />
         <Route path="/jcontent" element={<JContentPage />} />
         <Route path="/vocabulary" element={<VocabularyPage />} />
+        <Route path="/journey" element={<JourneyPage />} />
+        <Route path="/scenario" element={<ScenarioPage />} />
 
         {/* 404 리다이렉트 */}
         <Route path="*" element={<Navigate to="/" replace />} />

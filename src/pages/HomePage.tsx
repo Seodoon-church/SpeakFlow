@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Flame, Target, ChevronRight, Trophy, Users, ChevronDown, Tv, Music, Brain } from 'lucide-react';
+import { Play, Flame, Target, ChevronRight, Trophy, Users, ChevronDown, Tv, Music, Brain, Map } from 'lucide-react';
 import { useLearningStore, useFamilyStore, TRACKS, useLanguageStore } from '@/stores';
 import { Avatar } from '@/components/common';
 import { LANGUAGES, type LearningLanguage } from '@/types';
@@ -299,7 +299,7 @@ export default function HomePage() {
       {currentLanguage === 'ja' && (
         <button
           onClick={() => navigate('/vocabulary')}
-          className="w-full card bg-gradient-to-r from-amber-500 to-orange-500 text-white mb-6 text-left"
+          className="w-full card bg-gradient-to-r from-amber-500 to-orange-500 text-white mb-3 text-left"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -308,6 +308,26 @@ export default function HomePage() {
               </div>
               <h2 className="text-lg font-bold">단어장</h2>
               <p className="text-sm opacity-90">SRS 간격 반복 학습</p>
+            </div>
+            <ChevronRight className="w-6 h-6 opacity-80" />
+          </div>
+        </button>
+      )}
+
+      {/* 일본 여행 Journey (일본어 선택 시) */}
+      {currentLanguage === 'ja' && (
+        <button
+          onClick={() => navigate('/journey')}
+          className="w-full card bg-gradient-to-r from-cyan-500 to-teal-500 text-white mb-6 text-left"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Map className="w-5 h-5" />
+                <span className="text-lg">🗾</span>
+              </div>
+              <h2 className="text-lg font-bold">일본 여행</h2>
+              <p className="text-sm opacity-90">가상 여행으로 실전 일본어</p>
             </div>
             <ChevronRight className="w-6 h-6 opacity-80" />
           </div>

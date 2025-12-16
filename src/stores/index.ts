@@ -24,3 +24,4 @@ export {
   SAMPLE_VOCABULARY,
 } from './vocabularyStore';
 export type { VocabWord, ReviewQuality } from './vocabularyStore';
+export { useJourneyStore } from './journeyStore';
