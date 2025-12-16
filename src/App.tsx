@@ -17,6 +17,8 @@ import {
   VocabularyPage,
   JourneyPage,
   ScenarioPage,
+  JourneyEnPage,
+  ScenarioEnPage,
 } from '@/pages';
 
 function App() {
@@ -48,6 +50,8 @@ function App() {
         <Route path="/vocabulary" element={<VocabularyPage />} />
         <Route path="/journey" element={<JourneyPage />} />
         <Route path="/scenario" element={<ScenarioPage />} />
+        <Route path="/journey-en" element={<JourneyEnPage />} />
+        <Route path="/scenario-en" element={<ScenarioEnPage />} />
 
         {/* 404 리다이렉트 */}
         <Route path="*" element={<Navigate to="/" replace />} />

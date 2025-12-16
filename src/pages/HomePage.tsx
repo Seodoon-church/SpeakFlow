@@ -334,6 +334,27 @@ export default function HomePage() {
         </button>
       )}
 
+      {/* 영어권 여행 Journey (영어 선택 시) */}
+      {currentLanguage === 'en' && (
+        <button
+          onClick={() => navigate('/journey-en')}
+          className="w-full card bg-gradient-to-r from-blue-500 to-red-500 text-white mb-6 text-left"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Map className="w-5 h-5" />
+                <span className="text-lg">🇺🇸</span>
+                <span className="text-lg">🇬🇧</span>
+              </div>
+              <h2 className="text-lg font-bold">English Journey</h2>
+              <p className="text-sm opacity-90">미국 & 영국 여행으로 실전 영어</p>
+            </div>
+            <ChevronRight className="w-6 h-6 opacity-80" />
+          </div>
+        </button>
+      )}
+
       {/* 학습 단계 미리보기 */}
       <section className="mb-6">
         <h3 className="text-lg font-bold text-foreground mb-3">학습 플로우</h3>

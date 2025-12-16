@@ -25,3 +25,4 @@ export {
 } from './vocabularyStore';
 export type { VocabWord, ReviewQuality } from './vocabularyStore';
 export { useJourneyStore } from './journeyStore';
+export { useJourneyEnStore } from './journeyEnStore';

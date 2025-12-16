@@ -45,7 +45,28 @@
       "Bash(firebase use:*)",
       "Bash(firebase apps:list:*)",
       "Bash(firebase apps:sdkconfig:*)",
-      "Bash(firebase experiments:enable:*)"
+      "Bash(firebase experiments:enable:*)",
+      "Bash(for file in DashboardPage.tsx CoursesPage.tsx LoginPage.tsx RegisterPage.tsx ProfilePage.tsx SettingsPage.tsx VocabularyPage.tsx)",
+      "Bash(do sed -i \"1{/^''use client'';$/d}\" \"$file\")",
+      "Bash(done)",
+      "Bash(for file in *.tsx)",
+      "Bash(do sed -i \"s/import Link from ''next\\/link''/import { Link } from ''react-router-dom''/g\" \"$file\")",
+      "Bash(do sed -i \"s/import Image from ''next\\/image''//g\" \"$file\")",
+      "Bash(do sed -i \"s/import { useRouter } from ''next\\/navigation''/import { useNavigate } from ''react-router-dom''/g\" \"$file\")",
+      "Bash(do sed -i 's/const router = useRouter()/const navigate = useNavigate()/g' \"$file\")",
+      "Bash(cmd //c \"ren koreanflow-vite koreanflow\")",
+      "WebFetch(domain:koreanflow.web.app)",
+      "Bash(firebase init:*)",
+      "Bash(firebase functions:secrets:set:*)",
+      "Bash(firebase functions:log:*)",
+      "Bash(node -e \"\nconst https = require(''https'');\nconst data = JSON.stringify({\n  messages: [{role: ''user'', content: ''Hello!''}],\n  scenario: ''free-talk'',\n  language: ''en''\n});\nconst options = {\n  hostname: ''us-central1-koreanflow.cloudfunctions.net'',\n  path: ''/chat'',\n  method: ''POST'',\n  headers: {\n    ''Content-Type'': ''application/json'',\n    ''Content-Length'': data.length\n  }\n};\nconst req = https.request(options, (res) => {\n  let body = '''';\n  res.on(''data'', (chunk) => body += chunk);\n  res.on(''end'', () => console.log(''Status:'', res.statusCode, ''Body:'', body));\n});\nreq.on(''error'', (e) => console.error(''Error:'', e));\nreq.write(data);\nreq.end();\n\")",
+      "Bash(node:*)",
+      "Bash(firebase functions:secrets:destroy:*)",
+      "Bash(printf:*)",
+      "Bash(gcloud secrets add-iam-policy-binding:*)",
+      "Bash(firebase functions:secrets:access:*)",
+      "Bash(firebase functions:secrets:get:*)",
+      "Bash(firebase functions:delete:*)"
     ]
   }
 }
