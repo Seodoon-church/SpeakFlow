@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Flame, Target, ChevronRight, Trophy, Users, ChevronDown, Tv, Music } from 'lucide-react';
+import { Play, Flame, Target, ChevronRight, Trophy, Users, ChevronDown, Tv, Music, Brain } from 'lucide-react';
 import { useLearningStore, useFamilyStore, TRACKS, useLanguageStore } from '@/stores';
 import { Avatar } from '@/components/common';
 import { LANGUAGES, type LearningLanguage } from '@/types';
@@ -279,7 +279,7 @@ export default function HomePage() {
       {currentLanguage === 'ja' && (
         <button
           onClick={() => navigate('/jcontent')}
-          className="w-full card bg-gradient-to-r from-violet-500 to-purple-500 text-white mb-6 text-left"
+          className="w-full card bg-gradient-to-r from-violet-500 to-purple-500 text-white mb-3 text-left"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -289,6 +289,25 @@ export default function HomePage() {
               </div>
               <h2 className="text-lg font-bold">J-Content</h2>
               <p className="text-sm opacity-90">애니메이션 & J-Pop으로 배우기</p>
+            </div>
+            <ChevronRight className="w-6 h-6 opacity-80" />
+          </div>
+        </button>
+      )}
+
+      {/* 단어장 (일본어 선택 시) */}
+      {currentLanguage === 'ja' && (
+        <button
+          onClick={() => navigate('/vocabulary')}
+          className="w-full card bg-gradient-to-r from-amber-500 to-orange-500 text-white mb-6 text-left"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Brain className="w-5 h-5" />
+              </div>
+              <h2 className="text-lg font-bold">단어장</h2>
+              <p className="text-sm opacity-90">SRS 간격 반복 학습</p>
             </div>
             <ChevronRight className="w-6 h-6 opacity-80" />
           </div>

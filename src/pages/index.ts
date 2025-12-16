@@ -11,3 +11,4 @@ export { default as KanaPage } from './KanaPage';
 export { default as LeaderboardPage } from './LeaderboardPage';
 export { default as BadgePage } from './BadgePage';
 export { default as JContentPage } from './JContentPage';
+export { default as VocabularyPage } from './VocabularyPage';

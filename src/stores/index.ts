@@ -17,3 +17,10 @@ export {
   getXpProgress,
 } from './gamificationStore';
 export type { BadgeDefinition } from './gamificationStore';
+export {
+  useVocabularyStore,
+  getMasteryLevel,
+  REVIEW_BUTTONS,
+  SAMPLE_VOCABULARY,
+} from './vocabularyStore';
+export type { VocabWord, ReviewQuality } from './vocabularyStore';

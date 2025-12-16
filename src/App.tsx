@@ -14,6 +14,7 @@ import {
   LeaderboardPage,
   BadgePage,
   JContentPage,
+  VocabularyPage,
 } from '@/pages';
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/badges" element={<BadgePage />} />
         <Route path="/jcontent" element={<JContentPage />} />
+        <Route path="/vocabulary" element={<VocabularyPage />} />
 
         {/* 404 리다이렉트 */}
         <Route path="*" element={<Navigate to="/" replace />} />
