@@ -6,3 +6,14 @@ export type { FamilyMember } from './familyStore';
 export { useChatStore, ENCOURAGEMENT_MESSAGES, createAchievementMessage } from './chatStore';
 export type { ChatMessage } from './chatStore';
 export { useLanguageStore } from './languageStore';
+export {
+  useGamificationStore,
+  BADGES,
+  ENCOURAGEMENTS,
+  XP_REWARDS,
+  calculateLevel,
+  getXpForNextLevel,
+  getCurrentLevelXp,
+  getXpProgress,
+} from './gamificationStore';
+export type { BadgeDefinition } from './gamificationStore';

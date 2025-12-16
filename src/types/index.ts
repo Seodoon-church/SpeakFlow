@@ -141,6 +141,39 @@ export interface Badge {
   earned_at?: string;
 }
 
+// 획득한 배지
+export interface EarnedBadge {
+  id: string;
+  earnedAt: string;
+}
+
+// 스트릭 데이터
+export interface StreakData {
+  current: number;
+  longest: number;
+  lastStudyDate: string | null;
+}
+
+// 주간 진행 상황
+export interface WeeklyProgress {
+  weekStart: string;
+  xpEarned: number;
+  daysActive: number;
+  lessonsCompleted: number;
+  minutesLearned: number;
+}
+
+// 멤버별 게이미피케이션 데이터
+export interface MemberGamificationData {
+  xp: number;
+  level: number;
+  streak: StreakData;
+  badges: EarnedBadge[];
+  weeklyProgress: WeeklyProgress;
+  todayXp: number;
+  dailyGoalXp: number;
+}
+
 // 학습 통계
 export interface LearningStats {
   total_learning_time: number;

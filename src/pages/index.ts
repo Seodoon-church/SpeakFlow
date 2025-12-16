@@ -8,3 +8,5 @@ export { default as SettingsPage } from './SettingsPage';
 export { default as FamilyPage } from './FamilyPage';
 export { default as ChatPage } from './ChatPage';
 export { default as KanaPage } from './KanaPage';
+export { default as LeaderboardPage } from './LeaderboardPage';
+export { default as BadgePage } from './BadgePage';

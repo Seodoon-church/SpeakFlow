@@ -177,7 +177,7 @@ export default function HomePage() {
       </header>
 
       {/* 연속 학습일 & 오늘의 목표 */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-3 mb-3">
         {/* 연속 학습일 */}
         <div className="card bg-gradient-to-br from-accent-500 to-accent-600 text-white">
           <div className="flex items-center gap-2 mb-2">
@@ -205,6 +205,37 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* 가족 리더보드 링크 */}
+      <button
+        onClick={() => navigate('/leaderboard')}
+        className="w-full card bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 mb-6 text-left hover:shadow-md transition-all"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
+            <Trophy className="w-5 h-5 text-yellow-600" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-bold text-foreground">가족 리더보드</h4>
+            <p className="text-xs text-gray-500">이번 주 가족 랭킹을 확인해보세요</p>
+          </div>
+          <div className="flex -space-x-2">
+            {members.slice(0, 3).map((member) => (
+              <div
+                key={member.id}
+                className="w-8 h-8 rounded-full bg-white border-2 border-yellow-100 flex items-center justify-center text-sm overflow-hidden"
+              >
+                {member.avatarUrl ? (
+                  <img src={member.avatarUrl} alt={member.name} className="w-full h-full object-cover" />
+                ) : (
+                  member.avatar
+                )}
+              </div>
+            ))}
+          </div>
+          <ChevronRight className="w-5 h-5 text-yellow-500" />
+        </div>
+      </button>
 
       {/* 오늘의 미션 시작 */}
       <div className="card bg-gradient-to-r from-primary-500 to-primary-600 text-white mb-6">

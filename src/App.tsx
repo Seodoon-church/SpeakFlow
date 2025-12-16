@@ -11,6 +11,8 @@ import {
   FamilyPage,
   ChatPage,
   KanaPage,
+  LeaderboardPage,
+  BadgePage,
 } from '@/pages';
 
 function App() {
@@ -36,6 +38,8 @@ function App() {
         <Route path="/learn" element={<LearnPage />} />
         <Route path="/roleplay" element={<RoleplayPage />} />
         <Route path="/kana" element={<KanaPage />} />
+        <Route path="/leaderboard" element={<LeaderboardPage />} />
+        <Route path="/badges" element={<BadgePage />} />
 
         {/* 404 리다이렉트 */}
         <Route path="*" element={<Navigate to="/" replace />} />
