@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Flame, Target, ChevronRight, Trophy, Users, ChevronDown } from 'lucide-react';
+import { Play, Flame, Target, ChevronRight, Trophy, Users, ChevronDown, Tv, Music } from 'lucide-react';
 import { useLearningStore, useFamilyStore, TRACKS, useLanguageStore } from '@/stores';
 import { Avatar } from '@/components/common';
 import { LANGUAGES, type LearningLanguage } from '@/types';
@@ -259,7 +259,7 @@ export default function HomePage() {
       {currentLanguage === 'ja' && (
         <button
           onClick={() => navigate('/kana')}
-          className="w-full card bg-gradient-to-r from-pink-500 to-rose-500 text-white mb-6 text-left"
+          className="w-full card bg-gradient-to-r from-pink-500 to-rose-500 text-white mb-3 text-left"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -269,6 +269,26 @@ export default function HomePage() {
               </div>
               <h2 className="text-lg font-bold">히라가나 / 가타카나</h2>
               <p className="text-sm opacity-90">일본어 문자 학습</p>
+            </div>
+            <ChevronRight className="w-6 h-6 opacity-80" />
+          </div>
+        </button>
+      )}
+
+      {/* J-Content (일본어 선택 시) */}
+      {currentLanguage === 'ja' && (
+        <button
+          onClick={() => navigate('/jcontent')}
+          className="w-full card bg-gradient-to-r from-violet-500 to-purple-500 text-white mb-6 text-left"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Tv className="w-5 h-5" />
+                <Music className="w-5 h-5" />
+              </div>
+              <h2 className="text-lg font-bold">J-Content</h2>
+              <p className="text-sm opacity-90">애니메이션 & J-Pop으로 배우기</p>
             </div>
             <ChevronRight className="w-6 h-6 opacity-80" />
           </div>

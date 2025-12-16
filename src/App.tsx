@@ -13,6 +13,7 @@ import {
   KanaPage,
   LeaderboardPage,
   BadgePage,
+  JContentPage,
 } from '@/pages';
 
 function App() {
@@ -40,6 +41,7 @@ function App() {
         <Route path="/kana" element={<KanaPage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/badges" element={<BadgePage />} />
+        <Route path="/jcontent" element={<JContentPage />} />
 
         {/* 404 리다이렉트 */}
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -10,3 +10,4 @@ export { default as ChatPage } from './ChatPage';
 export { default as KanaPage } from './KanaPage';
 export { default as LeaderboardPage } from './LeaderboardPage';
 export { default as BadgePage } from './BadgePage';
+export { default as JContentPage } from './JContentPage';
