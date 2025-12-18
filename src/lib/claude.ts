@@ -53,6 +53,14 @@ export async function sendMessageToClaude(
   messages: ChatMessage[],
   context: RoleplayContext
 ): Promise<string> {
+  // 개발 환경에서는 바로 폴백 응답 사용 (Edge Function 미설정)
+  if (import.meta.env.DEV) {
+    console.log('DEV mode: Using fallback responses');
+    // 시나리오에 맞는 트랙 ID 결정
+    const trackId = getTrackIdFromScenario(context.scenario.title);
+    return getFallbackResponse(messages, trackId);
+  }
+
   const systemPrompt = buildSystemPrompt(context);
 
   try {
@@ -80,34 +88,67 @@ export async function sendMessageToClaude(
   }
 }
 
-// 로컬 개발용 API (Vite 프록시 사용)
-async function sendMessageToLocalAPI(
+// 시나리오 제목에서 트랙 ID 추출
+function getTrackIdFromScenario(title: string): string {
+  if (title.includes('카페') || title.includes('주문') || title.includes('메뉴')) return 'bakery-cafe';
+  if (title.includes('비즈니스') || title.includes('미팅') || title.includes('협상')) return 'business';
+  if (title.includes('뷰티') || title.includes('화장품')) return 'beauty-tech';
+  if (title.includes('학회') || title.includes('논문') || title.includes('박사')) return 'academic';
+  if (title.includes('브랜드') || title.includes('마케팅')) return 'cosmetics';
+  return 'daily-life';
+}
+
+// Anthropic API 직접 호출 (Vite 프록시 사용)
+async function callAnthropicAPI(
   messages: ChatMessage[],
   systemPrompt: string
 ): Promise<string> {
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+
+  if (!apiKey || apiKey === 'your-claude-api-key') {
+    console.log('No Anthropic API key configured, using fallback');
+    return getFallbackResponse(messages);
+  }
+
   try {
-    const response = await fetch('/api/chat', {
+    const response = await fetch('/api/anthropic/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        messages,
-        systemPrompt,
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 300,
+        system: systemPrompt,
+        messages: messages.map(m => ({
+          role: m.role,
+          content: m.content,
+        })),
       }),
     });
 
     if (!response.ok) {
-      throw new Error('Local API error');
+      const errorText = await response.text();
+      console.error('Anthropic API error:', response.status, errorText);
+      throw new Error(`Anthropic API error: ${response.status}`);
     }
 
     const data = await response.json();
-    return data.content;
+    return data.content[0].text;
   } catch (err) {
-    console.error('Local API error:', err);
-    // 최종 폴백: 미리 정의된 응답
+    console.error('Anthropic API call failed:', err);
     return getFallbackResponse(messages);
   }
+}
+
+// 로컬 개발용 API (Vite 프록시 사용) - 레거시
+async function sendMessageToLocalAPI(
+  messages: ChatMessage[],
+  systemPrompt: string
+): Promise<string> {
+  return callAnthropicAPI(messages, systemPrompt);
 }
 
 // 폴백 응답 (API 연결 실패 시) - 번역 포함
@@ -448,8 +489,15 @@ Remember: Your goal is to make the user feel comfortable practicing English!`;
 export async function sendFreetalkMessage(
   messages: ChatMessage[]
 ): Promise<string> {
+  // DEV 모드에서도 API 키가 있으면 직접 호출
+  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+  if (apiKey && apiKey !== 'your-claude-api-key') {
+    console.log('Using Anthropic API for freetalk');
+    return callAnthropicAPI(messages, FREETALK_SYSTEM_PROMPT);
+  }
+
+  // API 키 없으면 Supabase Edge Function 시도
   try {
-    // Supabase Edge Function 호출
     const { data, error } = await supabase.functions.invoke('chat-claude', {
       body: {
         messages: messages.map(m => ({
@@ -468,9 +516,23 @@ export async function sendFreetalkMessage(
     return data.content;
   } catch (err) {
     console.error('Claude API error:', err);
-    // 폴백: 로컬 API 엔드포인트 시도 (개발용)
-    return sendMessageToLocalAPI(messages, FREETALK_SYSTEM_PROMPT);
+    return getFreetalkFallbackResponse(messages);
   }
+}
+
+// 프리토킹 폴백 응답
+function getFreetalkFallbackResponse(_messages: ChatMessage[]): string {
+  const responses = [
+    "That's really interesting! Tell me more about that.",
+    "Oh, I see! What made you think of that?",
+    "Great point! How do you usually handle that?",
+    "That sounds fun! Have you tried it before?",
+    "Interesting! What's your favorite part about it?",
+    "I understand. What would you like to do next?",
+    "That makes sense! Is there anything else on your mind?",
+    "Cool! How long have you been interested in that?",
+  ];
+  return responses[Math.floor(Math.random() * responses.length)];
 }
 
 // 프리토킹 첫 인사말
@@ -489,6 +551,12 @@ export async function generateFeedback(
   messages: ChatMessage[],
   context: RoleplayContext
 ): Promise<string> {
+  // 개발 환경에서는 바로 폴백 피드백 사용
+  if (import.meta.env.DEV) {
+    console.log('DEV mode: Using fallback feedback');
+    return '오늘 대화 연습 잘 하셨어요! 자연스럽게 대화를 이어나가셨습니다. 다음에는 "I was wondering if..." 같은 공손한 표현을 더 활용해 보세요.';
+  }
+
   const feedbackPrompt = `Based on the following English conversation practice session, provide brief, encouraging feedback in Korean for the learner.
 
 Scenario: ${context.scenario.title}
@@ -524,6 +592,12 @@ export async function generateSuggestedResponses(
   messages: ChatMessage[],
   context: RoleplayContext
 ): Promise<string[]> {
+  // 개발 환경에서는 바로 폴백 응답 사용
+  if (import.meta.env.DEV) {
+    console.log('DEV mode: Using fallback suggested responses');
+    return getFallbackSuggestedResponses(context);
+  }
+
   const lastAiMessage = messages.filter(m => m.role === 'assistant').pop()?.content || '';
 
   const prompt = `You are helping a Korean learner practice English in a roleplay scenario.

@@ -16,3 +16,5 @@ export { default as JourneyPage } from './JourneyPage';
 export { default as ScenarioPage } from './ScenarioPage';
 export { default as JourneyEnPage } from './JourneyEnPage';
 export { default as ScenarioEnPage } from './ScenarioEnPage';
+export { default as LevelTestPage } from './LevelTestPage';
+export { default as AvatarChatPage } from './AvatarChatPage';

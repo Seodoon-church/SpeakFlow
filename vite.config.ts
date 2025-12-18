@@ -64,5 +64,20 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src')
     }
+  },
+  server: {
+    proxy: {
+      '/api/anthropic': {
+        target: 'https://api.anthropic.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/anthropic/, ''),
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            // Anthropic API 헤더 설정
+            proxyReq.setHeader('anthropic-version', '2023-06-01');
+          });
+        }
+      }
+    }
   }
 })

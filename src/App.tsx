@@ -19,6 +19,8 @@ import {
   ScenarioPage,
   JourneyEnPage,
   ScenarioEnPage,
+  LevelTestPage,
+  AvatarChatPage,
 } from '@/pages';
 
 function App() {
@@ -30,6 +32,8 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/welcome" element={<LandingPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/level-test" element={<LevelTestPage />} />
+        <Route path="/avatar-chat" element={<AvatarChatPage />} />
 
         {/* 메인 라우트 (레이아웃 포함) */}
         <Route element={<Layout />}>

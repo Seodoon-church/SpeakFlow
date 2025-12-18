@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Flame, Target, ChevronRight, Trophy, Users, ChevronDown, Tv, Music, Brain, Map } from 'lucide-react';
+import { Play, Flame, Target, ChevronRight, Trophy, Users, ChevronDown, Tv, Music, Brain, Map, MessageCircle, GraduationCap, Sparkles, Video } from 'lucide-react';
 import { useLearningStore, useFamilyStore, TRACKS, useLanguageStore } from '@/stores';
 import { Avatar } from '@/components/common';
 import { LANGUAGES, type LearningLanguage } from '@/types';
@@ -254,6 +254,80 @@ export default function HomePage() {
           </button>
         </div>
       </div>
+
+      {/* 새로운 기능 카드들 */}
+      <section className="mb-6">
+        <h3 className="text-lg font-bold text-foreground mb-3">AI 학습 도구</h3>
+        <div className="grid grid-cols-2 gap-3">
+          {/* AI 아바타 채팅 */}
+          <button
+            onClick={() => navigate('/avatar-chat')}
+            className="card bg-gradient-to-br from-cyan-500 to-purple-600 text-white text-left hover:shadow-lg hover:scale-[1.02] transition-all"
+          >
+            <div className="flex flex-col h-full">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
+                <Video className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-base mb-1">AI 아바타</h4>
+              <p className="text-xs opacity-80">AI와 얼굴 보며 대화</p>
+              <div className="mt-auto pt-2">
+                <span className="text-xs bg-white/20 px-2 py-1 rounded-full">TTS</span>
+              </div>
+            </div>
+          </button>
+
+          {/* 레벨 테스트 */}
+          <button
+            onClick={() => navigate('/level-test')}
+            className="card bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-left hover:shadow-lg hover:scale-[1.02] transition-all"
+          >
+            <div className="flex flex-col h-full">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-base mb-1">레벨 테스트</h4>
+              <p className="text-xs opacity-80">나의 실력 확인하기</p>
+              <div className="mt-auto pt-2">
+                <span className="text-xs bg-white/20 px-2 py-1 rounded-full">CEFR</span>
+              </div>
+            </div>
+          </button>
+
+          {/* 프리토킹 */}
+          <button
+            onClick={() => navigate('/chat')}
+            className="card bg-gradient-to-br from-orange-500 to-red-500 text-white text-left hover:shadow-lg hover:scale-[1.02] transition-all"
+          >
+            <div className="flex flex-col h-full">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
+                <MessageCircle className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-base mb-1">프리토킹</h4>
+              <p className="text-xs opacity-80">AI와 자유롭게 대화</p>
+              <div className="mt-auto pt-2">
+                <span className="text-xs bg-white/20 px-2 py-1 rounded-full">TEXT</span>
+              </div>
+            </div>
+          </button>
+
+          {/* 롤플레이 */}
+          <button
+            onClick={() => navigate('/roleplay')}
+            className="card bg-gradient-to-br from-violet-500 to-indigo-600 text-white text-left hover:shadow-lg hover:scale-[1.02] transition-all"
+          >
+            <div className="flex flex-col h-full">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-base mb-1">롤플레이</h4>
+              <p className="text-xs opacity-80">시나리오 대화 연습</p>
+              <div className="mt-auto pt-2">
+                <span className="text-xs bg-white/20 px-2 py-1 rounded-full">시나리오</span>
+              </div>
+            </div>
+          </button>
+        </div>
+      </section>
 
       {/* 문자 학습 (일본어 선택 시) */}
       {currentLanguage === 'ja' && (
