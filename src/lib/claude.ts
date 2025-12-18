@@ -98,19 +98,48 @@ function getTrackIdFromScenario(title: string): string {
   return 'daily-life';
 }
 
-// Anthropic API 직접 호출 (Vite 프록시 사용)
+// Anthropic API 호출 (DEV: Vite 프록시, PROD: Vercel Serverless Function)
 async function callAnthropicAPI(
   messages: ChatMessage[],
   systemPrompt: string
 ): Promise<string> {
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-
-  if (!apiKey || apiKey === 'your-claude-api-key') {
-    console.log('No Anthropic API key configured, using fallback');
-    return getFallbackResponse(messages);
-  }
-
   try {
+    // 프로덕션에서는 Vercel Serverless Function 사용
+    if (!import.meta.env.DEV) {
+      console.log('Production mode: Using Vercel API');
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: messages.map(m => ({
+            role: m.role,
+            content: m.content,
+          })),
+          systemPrompt,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Vercel API error:', response.status, errorText);
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.content;
+    }
+
+    // 개발 모드에서는 Vite 프록시 사용
+    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+
+    if (!apiKey || apiKey === 'your-claude-api-key') {
+      console.log('No Anthropic API key configured, using fallback');
+      return getFallbackResponse(messages);
+    }
+
+    console.log('DEV mode: Using Vite proxy');
     const response = await fetch('/api/anthropic/v1/messages', {
       method: 'POST',
       headers: {
