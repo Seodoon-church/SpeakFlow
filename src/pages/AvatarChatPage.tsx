@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { sendFreetalkMessage, ChatMessage } from '@/lib/claude';
+import { sendFreetalkMessage } from '@/lib/claude';
+import type { ChatMessage } from '@/lib/claude';
 import {
   Mic,
   MicOff,

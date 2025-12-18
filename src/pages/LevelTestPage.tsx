@@ -88,7 +88,8 @@ export default function LevelTestPage() {
   const [answers, setAnswers] = useState<number[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [resultLevel, setResultLevel] = useState('B1');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [resultLevel, _setResultLevel] = useState('B1');
 
   // 진행률 계산
   const getProgress = () => {
