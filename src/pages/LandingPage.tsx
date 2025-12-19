@@ -77,13 +77,21 @@ export default function LandingPage() {
             </div>
             <span className="text-xl font-bold text-foreground">SpeakFlow</span>
           </div>
-          <button
-            onClick={() => setShowProfileSelector(true)}
-            className="px-5 py-2 bg-primary-500 text-white rounded-full font-medium hover:bg-primary-600 transition-colors flex items-center gap-2"
-          >
-            <span>시작하기</span>
-            <ChevronDown className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/login')}
+              className="px-4 py-2 text-gray-600 hover:text-primary-600 font-medium transition-colors"
+            >
+              로그인
+            </button>
+            <button
+              onClick={() => setShowProfileSelector(true)}
+              className="px-5 py-2 bg-primary-500 text-white rounded-full font-medium hover:bg-primary-600 transition-colors flex items-center gap-2"
+            >
+              <span>시작하기</span>
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </nav>
 

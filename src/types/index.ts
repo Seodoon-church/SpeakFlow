@@ -215,3 +215,45 @@ export interface OnboardingState {
   dailyGoal: number;
   completed: boolean;
 }
+
+// ========== 상황 시뮬레이션 관련 타입 ==========
+
+// AI가 자동 생성하는 시나리오
+export interface GeneratedScenario {
+  background: string;           // 배경 설명 (예: "도쿄 지하철 역")
+  backgroundId: string;         // UI 배경 매핑용 ID
+  npcRole: string;              // NPC 역할 (예: "역무원")
+  npcName: string;              // NPC 이름 (예: "田中さん")
+  userGoal: string;             // 사용자 목표 (예: "신주쿠역 가는 방법 묻기")
+  difficulty: 'easy' | 'medium' | 'hard';
+  language: string;             // 대상 언어 코드
+  suggestedExpressions: string[]; // 힌트로 제공할 표현들
+  openingLine: string;          // NPC의 첫 대사
+  openingLineTranslation: string; // 첫 대사 한글 번역
+}
+
+// 시뮬레이션 컨텍스트
+export interface SimulationContext {
+  id: string;
+  userInput: string;            // 사용자가 입력한 상황 설명
+  generatedScenario: GeneratedScenario;
+  startedAt: Date;
+  endedAt?: Date;
+}
+
+// 시뮬레이션 완료 후 피드백
+export interface SimulationFeedback {
+  overallScore: number;         // 0-100
+  grammarScore: number;
+  naturalityScore: number;
+  wellDonePoints: string[];     // 잘한 점
+  improvementPoints: string[];  // 개선점
+  additionalExpressions: string[]; // 추가로 쓸 수 있는 표현
+}
+
+// 실시간 피드백 (대화 중)
+export interface RealTimeFeedback {
+  grammarCorrection?: string;   // 문법 교정
+  naturalExpression?: string;   // 더 자연스러운 표현
+  tip?: string;                 // 상황별 팁
+}

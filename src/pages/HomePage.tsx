@@ -1,7 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Flame, Target, ChevronRight, Trophy, Users, ChevronDown, Tv, Music, Brain, Map, MessageCircle, GraduationCap, Sparkles, Video } from 'lucide-react';
-import { useLearningStore, useFamilyStore, TRACKS, useLanguageStore } from '@/stores';
+import { motion } from 'framer-motion';
+import {
+  Flame,
+  ChevronRight,
+  Trophy,
+  Users,
+  ChevronDown,
+  MessageCircle,
+  Sparkles,
+  Video,
+  Mic,
+  Target,
+  Zap,
+  Clock,
+  BookOpen,
+  Award,
+  TrendingUp,
+} from 'lucide-react';
+import { useLearningStore, useFamilyStore, TRACKS, useLanguageStore, useAuthStore } from '@/stores';
+import { useChatHistoryStore } from '@/stores/chatHistoryStore';
 import { Avatar } from '@/components/common';
 import { LANGUAGES, type LearningLanguage } from '@/types';
 
@@ -10,6 +28,8 @@ export default function HomePage() {
   const { currentTrack, setCurrentTrack } = useLearningStore();
   const { members, currentMemberId, setCurrentMember } = useFamilyStore();
   const { currentLanguage, setLanguage } = useLanguageStore();
+  const { user } = useAuthStore();
+  const { gamification, getRecentSessions, currentLevel } = useChatHistoryStore();
   const [showFamilySelector, setShowFamilySelector] = useState(false);
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
 
@@ -18,6 +38,12 @@ export default function HomePage() {
 
   // 현재 가족 구성원
   const currentMember = members.find(m => m.id === currentMemberId);
+
+  // 최근 대화 세션
+  const recentSessions = getRecentSessions(3);
+
+  // 현재 언어 레벨
+  const currentLangLevel = currentLevel[currentLanguage] || null;
 
   // 가족 구성원의 트랙으로 currentTrack 동기화
   useEffect(() => {
@@ -30,16 +56,8 @@ export default function HomePage() {
   }, [currentMember, currentTrack?.id, setCurrentTrack]);
 
   // 현재 가족 구성원 데이터 사용
-  const displayName = currentMember?.name || '학습자';
-  const streakDays = currentMember?.streakDays || 0;
-  const dailyGoal = currentMember?.dailyGoalMinutes || 15;
-  const todayMinutes = 0;
-  const progressPercent = Math.min((todayMinutes / dailyGoal) * 100, 100);
-
-  // 가족 구성원의 트랙 정보
-  const memberTrack = currentMember
-    ? TRACKS.find(t => t.id === currentMember.trackId)
-    : currentTrack;
+  const displayName = user?.name || currentMember?.name || '학습자';
+  const streakDays = gamification.streak.current || currentMember?.streakDays || 0;
 
   // 가족 구성원 전환
   const handleMemberChange = (memberId: string) => {
@@ -55,529 +73,437 @@ export default function HomePage() {
   };
 
   return (
-    <div className="px-4 pt-6 pb-4">
-      {/* 헤더 */}
-      <header className="mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* 아바타 (가족 모드일 때) */}
-            {currentMember && (
-              <Avatar
-                avatar={currentMember.avatar}
-                avatarUrl={currentMember.avatarUrl}
-                size="lg"
-                className="bg-primary-100"
-              />
-            )}
-            <div>
-              <p className="text-gray-500 text-sm">안녕하세요</p>
-              <h1 className="text-2xl font-bold text-foreground">
-                {displayName}님 👋
-              </h1>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="px-4 pt-6 pb-24">
+        {/* 헤더 */}
+        <header className="mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {currentMember && (
+                <Avatar
+                  avatar={currentMember.avatar}
+                  avatarUrl={currentMember.avatarUrl}
+                  size="lg"
+                  className="bg-primary-100"
+                />
+              )}
+              <div>
+                <p className="text-gray-500 text-sm">
+                  {new Date().getHours() < 12 ? '좋은 아침이에요' :
+                   new Date().getHours() < 18 ? '안녕하세요' : '좋은 저녁이에요'}
+                </p>
+                <h1 className="text-xl font-bold text-foreground">
+                  {displayName}님
+                </h1>
+              </div>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-2 items-end">
-            {/* 현재 학습 언어 드롭다운 */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setShowLanguageSelector(!showLanguageSelector);
-                  setShowFamilySelector(false);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-xs font-medium transition-colors"
-              >
-                <span className="text-base">{currentLangInfo?.flag}</span>
-                <span>{currentLangInfo?.name}</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${showLanguageSelector ? 'rotate-180' : ''}`} />
-              </button>
+            <div className="flex items-center gap-2">
+              {/* 언어 선택 */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowLanguageSelector(!showLanguageSelector);
+                    setShowFamilySelector(false);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-white shadow-sm border border-gray-100 hover:bg-gray-50 rounded-xl text-sm font-medium transition-colors"
+                >
+                  <span className="text-lg">{currentLangInfo?.flag}</span>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showLanguageSelector ? 'rotate-180' : ''}`} />
+                </button>
 
-              {/* 언어 선택 드롭다운 */}
-              {showLanguageSelector && (
-                <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50 min-w-[120px] animate-slide-down">
-                  {LANGUAGES.map((lang) => (
-                    <button
-                      key={lang.id}
-                      onClick={() => {
-                        setLanguage(lang.id as LearningLanguage);
-                        setShowLanguageSelector(false);
-                      }}
-                      className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 transition-colors text-left ${
-                        currentLanguage === lang.id ? 'bg-primary-50' : ''
-                      }`}
-                    >
-                      <span className="text-lg">{lang.flag}</span>
-                      <span className="text-sm font-medium text-gray-700">{lang.name}</span>
-                      {currentLanguage === lang.id && (
-                        <span className="ml-auto text-primary-500 text-xs">✓</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                {showLanguageSelector && (
+                  <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50 min-w-[140px] animate-slide-down">
+                    {LANGUAGES.map((lang) => (
+                      <button
+                        key={lang.id}
+                        onClick={() => {
+                          setLanguage(lang.id as LearningLanguage);
+                          setShowLanguageSelector(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-4 py-3 hover:bg-gray-50 transition-colors text-left ${
+                          currentLanguage === lang.id ? 'bg-primary-50' : ''
+                        }`}
+                      >
+                        <span className="text-xl">{lang.flag}</span>
+                        <span className="text-sm font-medium text-gray-700">{lang.name}</span>
+                        {currentLanguage === lang.id && (
+                          <span className="ml-auto text-primary-500">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 프로필 전환 */}
+              {members.length > 0 && (
+                <button
+                  onClick={() => {
+                    setShowFamilySelector(!showFamilySelector);
+                    setShowLanguageSelector(false);
+                  }}
+                  className="p-2 bg-white shadow-sm border border-gray-100 hover:bg-gray-50 rounded-xl transition-colors"
+                >
+                  <Users className="w-5 h-5 text-gray-600" />
+                </button>
               )}
             </div>
+          </div>
 
-            {/* 가족 전환 버튼 */}
-            {members.length > 0 && (
+          {/* 가족 구성원 선택 드롭다운 */}
+          {showFamilySelector && members.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-3 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+            >
+              {members.map((member) => (
+                <button
+                  key={member.id}
+                  onClick={() => handleMemberChange(member.id)}
+                  className={`w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors ${
+                    currentMemberId === member.id ? 'bg-primary-50' : ''
+                  }`}
+                >
+                  <Avatar avatar={member.avatar} avatarUrl={member.avatarUrl} size="md" />
+                  <div className="flex-1 text-left">
+                    <p className="font-medium text-foreground">{member.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {TRACKS.find(t => t.id === member.trackId)?.name}
+                    </p>
+                  </div>
+                  {currentMemberId === member.id && (
+                    <span className="text-xs bg-primary-500 text-white px-2 py-0.5 rounded-full">현재</span>
+                  )}
+                </button>
+              ))}
               <button
                 onClick={() => {
-                  setShowFamilySelector(!showFamilySelector);
-                  setShowLanguageSelector(false);
+                  setShowFamilySelector(false);
+                  navigate('/family');
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-100 hover:bg-primary-200 text-primary-700 rounded-xl text-sm font-semibold transition-colors border-2 border-primary-200"
+                className="w-full p-3 text-center text-sm text-primary-600 border-t border-gray-100 hover:bg-gray-50 font-medium"
               >
-                <Users className="w-5 h-5" />
-                <span>프로필 전환</span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${showFamilySelector ? 'rotate-180' : ''}`} />
+                + 프로필 관리
               </button>
-            )}
+            </motion.div>
+          )}
+        </header>
+
+        {/* 상태 카드 */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {/* 스트릭 */}
+          <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-3 text-white">
+            <Flame className="w-5 h-5 mb-1 opacity-80" />
+            <p className="text-2xl font-bold">{streakDays}</p>
+            <p className="text-xs opacity-80">연속 학습</p>
+          </div>
+
+          {/* XP & 레벨 */}
+          <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-3 text-white">
+            <Zap className="w-5 h-5 mb-1 opacity-80" />
+            <p className="text-2xl font-bold">Lv.{gamification.level}</p>
+            <p className="text-xs opacity-80">{gamification.xp} XP</p>
+          </div>
+
+          {/* 현재 레벨 */}
+          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-3 text-white">
+            <Award className="w-5 h-5 mb-1 opacity-80" />
+            <p className="text-2xl font-bold">{currentLangLevel || '?'}</p>
+            <p className="text-xs opacity-80">{currentLangInfo?.name} 레벨</p>
           </div>
         </div>
 
-        {/* 가족 구성원 선택 드롭다운 */}
-        {showFamilySelector && members.length > 0 && (
-          <div className="mt-3 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden animate-slide-down">
-            {members.map((member) => (
-              <button
-                key={member.id}
-                onClick={() => handleMemberChange(member.id)}
-                className={`w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors ${
-                  currentMemberId === member.id ? 'bg-primary-50' : ''
-                }`}
-              >
-                <Avatar
-                  avatar={member.avatar}
-                  avatarUrl={member.avatarUrl}
-                  size="md"
-                />
-                <div className="flex-1 text-left">
-                  <p className="font-medium text-foreground">{member.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {TRACKS.find(t => t.id === member.trackId)?.name} · {member.streakDays}일 연속
-                  </p>
-                </div>
-                {currentMemberId === member.id && (
-                  <span className="text-xs bg-primary-500 text-white px-2 py-0.5 rounded-full">
-                    현재
-                  </span>
-                )}
-              </button>
-            ))}
-            <button
-              onClick={() => {
-                setShowFamilySelector(false);
-                navigate('/family');
-              }}
-              className="w-full p-3 text-center text-sm text-primary-500 border-t border-gray-100 hover:bg-gray-50"
+        {/* 메인 AI 기능 - 아바타 채팅 */}
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate('/avatar-chat')}
+          className="w-full bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 rounded-3xl p-6 text-white mb-6 text-left shadow-xl shadow-purple-200 relative overflow-hidden"
+        >
+          {/* 배경 장식 */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-xl" />
+
+          <div className="relative flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
+                  AI 대화
+                </span>
+                <span className="px-2 py-1 bg-green-400/30 rounded-full text-xs font-medium text-green-100">
+                  추천
+                </span>
+              </div>
+              <h2 className="text-2xl font-bold mb-1">AI 아바타와 대화하기</h2>
+              <p className="text-sm opacity-80">음성으로 자연스럽게 회화 연습</p>
+            </div>
+            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+              <Video className="w-8 h-8" />
+            </div>
+          </div>
+
+          <div className="relative flex items-center gap-4 mt-4 pt-4 border-t border-white/20">
+            <div className="flex items-center gap-1.5 text-sm">
+              <MessageCircle className="w-4 h-4 opacity-60" />
+              <span className="opacity-80">프리토킹</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-sm">
+              <Sparkles className="w-4 h-4 opacity-60" />
+              <span className="opacity-80">시뮬레이션</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-sm">
+              <Mic className="w-4 h-4 opacity-60" />
+              <span className="opacity-80">발음 연습</span>
+            </div>
+          </div>
+        </motion.button>
+
+        {/* AI 기능 그리드 */}
+        <section className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-foreground">AI 학습 도구</h3>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* 상황 시뮬레이션 */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/avatar-chat?mode=simulation')}
+              className="bg-white rounded-2xl p-4 text-left shadow-sm border border-gray-100 hover:shadow-md transition-all"
             >
-              가족 관리하기
-            </button>
-          </div>
-        )}
-      </header>
+              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-3">
+                <Target className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="font-bold text-foreground mb-1">상황 시뮬레이션</h4>
+              <p className="text-xs text-gray-500">원하는 상황을 말하면 AI가 시나리오 생성</p>
+              <div className="mt-2">
+                <span className="text-xs bg-cyan-100 text-cyan-700 px-2 py-0.5 rounded-full">NEW</span>
+              </div>
+            </motion.button>
 
-      {/* 연속 학습일 & 오늘의 목표 */}
-      <div className="grid grid-cols-2 gap-3 mb-3">
-        {/* 연속 학습일 */}
-        <div className="card bg-gradient-to-br from-accent-500 to-accent-600 text-white">
-          <div className="flex items-center gap-2 mb-2">
-            <Flame className="w-5 h-5" />
-            <span className="text-sm font-medium opacity-90">연속 학습</span>
+            {/* 발음 평가 */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/avatar-chat?mode=pronunciation')}
+              className="bg-white rounded-2xl p-4 text-left shadow-sm border border-gray-100 hover:shadow-md transition-all"
+            >
+              <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-pink-600 rounded-xl flex items-center justify-center mb-3">
+                <Mic className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="font-bold text-foreground mb-1">발음 평가</h4>
+              <p className="text-xs text-gray-500">AI가 발음을 분석하고 교정 피드백</p>
+              <div className="mt-2">
+                <span className="text-xs bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">AI 분석</span>
+              </div>
+            </motion.button>
+
+            {/* 레벨 테스트 */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/level-test')}
+              className="bg-white rounded-2xl p-4 text-left shadow-sm border border-gray-100 hover:shadow-md transition-all"
+            >
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-3">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="font-bold text-foreground mb-1">레벨 테스트</h4>
+              <p className="text-xs text-gray-500">나의 실력을 CEFR 기준으로 측정</p>
+              <div className="mt-2">
+                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                  {currentLangLevel ? `현재 ${currentLangLevel}` : '테스트 하기'}
+                </span>
+              </div>
+            </motion.button>
+
+            {/* 트랙 학습 */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/learn')}
+              className="bg-white rounded-2xl p-4 text-left shadow-sm border border-gray-100 hover:shadow-md transition-all"
+            >
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center mb-3">
+                <BookOpen className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="font-bold text-foreground mb-1">오늘의 학습</h4>
+              <p className="text-xs text-gray-500">15분 체계적 학습 플로우</p>
+              <div className="mt-2">
+                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                  {currentTrack?.name || '시작하기'}
+                </span>
+              </div>
+            </motion.button>
           </div>
-          <p className="text-3xl font-bold">{streakDays}일</p>
-        </div>
+        </section>
 
         {/* 오늘의 목표 */}
-        <div className="card">
-          <div className="flex items-center gap-2 mb-2">
-            <Target className="w-5 h-5 text-primary-500" />
-            <span className="text-sm font-medium text-gray-600">오늘 목표</span>
-          </div>
-          <p className="text-3xl font-bold text-foreground">
-            {todayMinutes}<span className="text-lg text-gray-400">/{dailyGoal}분</span>
-          </p>
-          {/* 프로그레스 바 */}
-          <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary-500 rounded-full transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* 가족 리더보드 링크 */}
-      <button
-        onClick={() => navigate('/leaderboard')}
-        className="w-full card bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 mb-6 text-left hover:shadow-md transition-all"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
-            <Trophy className="w-5 h-5 text-yellow-600" />
-          </div>
-          <div className="flex-1">
-            <h4 className="font-bold text-foreground">가족 리더보드</h4>
-            <p className="text-xs text-gray-500">이번 주 가족 랭킹을 확인해보세요</p>
-          </div>
-          <div className="flex -space-x-2">
-            {members.slice(0, 3).map((member) => (
-              <div
-                key={member.id}
-                className="w-8 h-8 rounded-full bg-white border-2 border-yellow-100 flex items-center justify-center text-sm overflow-hidden"
-              >
-                {member.avatarUrl ? (
-                  <img src={member.avatarUrl} alt={member.name} className="w-full h-full object-cover" />
-                ) : (
-                  member.avatar
-                )}
+        <section className="mb-6">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-primary-500" />
+                <h4 className="font-bold text-foreground">오늘의 목표</h4>
               </div>
-            ))}
-          </div>
-          <ChevronRight className="w-5 h-5 text-yellow-500" />
-        </div>
-      </button>
-
-      {/* 오늘의 미션 시작 */}
-      <div className="card bg-gradient-to-r from-primary-500 to-primary-600 text-white mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold mb-1">오늘의 학습</h2>
-            <p className="text-sm opacity-90">
-              {memberTrack?.name || '학습 트랙을 선택해주세요'}
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/learn')}
-            className="bg-white/20 hover:bg-white/30 rounded-full p-4 transition-colors"
-          >
-            <Play className="w-6 h-6" fill="white" />
-          </button>
-        </div>
-      </div>
-
-      {/* 새로운 기능 카드들 */}
-      <section className="mb-6">
-        <h3 className="text-lg font-bold text-foreground mb-3">AI 학습 도구</h3>
-        <div className="grid grid-cols-2 gap-3">
-          {/* AI 아바타 채팅 */}
-          <button
-            onClick={() => navigate('/avatar-chat')}
-            className="card bg-gradient-to-br from-cyan-500 to-purple-600 text-white text-left hover:shadow-lg hover:scale-[1.02] transition-all"
-          >
-            <div className="flex flex-col h-full">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
-                <Video className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-base mb-1">AI 아바타</h4>
-              <p className="text-xs opacity-80">AI와 얼굴 보며 대화</p>
-              <div className="mt-auto pt-2">
-                <span className="text-xs bg-white/20 px-2 py-1 rounded-full">TTS</span>
-              </div>
+              <span className="text-sm text-gray-500">{gamification.dailyXp}/{gamification.dailyGoalXp} XP</span>
             </div>
-          </button>
 
-          {/* 레벨 테스트 */}
-          <button
-            onClick={() => navigate('/level-test')}
-            className="card bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-left hover:shadow-lg hover:scale-[1.02] transition-all"
-          >
-            <div className="flex flex-col h-full">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
-                <GraduationCap className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-base mb-1">레벨 테스트</h4>
-              <p className="text-xs opacity-80">나의 실력 확인하기</p>
-              <div className="mt-auto pt-2">
-                <span className="text-xs bg-white/20 px-2 py-1 rounded-full">CEFR</span>
-              </div>
+            {/* 프로그레스 바 */}
+            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min((gamification.dailyXp / gamification.dailyGoalXp) * 100, 100)}%` }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="h-full bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full"
+              />
             </div>
-          </button>
 
-          {/* 프리토킹 */}
-          <button
-            onClick={() => navigate('/chat')}
-            className="card bg-gradient-to-br from-orange-500 to-red-500 text-white text-left hover:shadow-lg hover:scale-[1.02] transition-all"
-          >
-            <div className="flex flex-col h-full">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
-                <MessageCircle className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-base mb-1">프리토킹</h4>
-              <p className="text-xs opacity-80">AI와 자유롭게 대화</p>
-              <div className="mt-auto pt-2">
-                <span className="text-xs bg-white/20 px-2 py-1 rounded-full">TEXT</span>
-              </div>
-            </div>
-          </button>
-
-          {/* 롤플레이 */}
-          <button
-            onClick={() => navigate('/roleplay')}
-            className="card bg-gradient-to-br from-violet-500 to-indigo-600 text-white text-left hover:shadow-lg hover:scale-[1.02] transition-all"
-          >
-            <div className="flex flex-col h-full">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-3">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <h4 className="font-bold text-base mb-1">롤플레이</h4>
-              <p className="text-xs opacity-80">시나리오 대화 연습</p>
-              <div className="mt-auto pt-2">
-                <span className="text-xs bg-white/20 px-2 py-1 rounded-full">시나리오</span>
-              </div>
-            </div>
-          </button>
-        </div>
-      </section>
-
-      {/* 문자 학습 (일본어 선택 시) */}
-      {currentLanguage === 'ja' && (
-        <button
-          onClick={() => navigate('/kana')}
-          className="w-full card bg-gradient-to-r from-pink-500 to-rose-500 text-white mb-3 text-left"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-2xl">あ</span>
-                <span className="text-2xl">ア</span>
-              </div>
-              <h2 className="text-lg font-bold">히라가나 / 가타카나</h2>
-              <p className="text-sm opacity-90">일본어 문자 학습</p>
-            </div>
-            <ChevronRight className="w-6 h-6 opacity-80" />
+            {gamification.dailyXp >= gamification.dailyGoalXp ? (
+              <p className="mt-2 text-sm text-green-600 font-medium flex items-center gap-1">
+                <Trophy className="w-4 h-4" />
+                오늘 목표 달성!
+              </p>
+            ) : (
+              <p className="mt-2 text-xs text-gray-500">
+                {gamification.dailyGoalXp - gamification.dailyXp} XP 더 모으면 오늘 목표 달성!
+              </p>
+            )}
           </div>
-        </button>
-      )}
-
-      {/* J-Content (일본어 선택 시) */}
-      {currentLanguage === 'ja' && (
-        <button
-          onClick={() => navigate('/jcontent')}
-          className="w-full card bg-gradient-to-r from-violet-500 to-purple-500 text-white mb-3 text-left"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Tv className="w-5 h-5" />
-                <Music className="w-5 h-5" />
-              </div>
-              <h2 className="text-lg font-bold">J-Content</h2>
-              <p className="text-sm opacity-90">애니메이션 & J-Pop으로 배우기</p>
-            </div>
-            <ChevronRight className="w-6 h-6 opacity-80" />
-          </div>
-        </button>
-      )}
-
-      {/* 단어장 (일본어 선택 시) */}
-      {currentLanguage === 'ja' && (
-        <button
-          onClick={() => navigate('/vocabulary')}
-          className="w-full card bg-gradient-to-r from-amber-500 to-orange-500 text-white mb-3 text-left"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Brain className="w-5 h-5" />
-              </div>
-              <h2 className="text-lg font-bold">단어장</h2>
-              <p className="text-sm opacity-90">SRS 간격 반복 학습</p>
-            </div>
-            <ChevronRight className="w-6 h-6 opacity-80" />
-          </div>
-        </button>
-      )}
-
-      {/* 일본 여행 Journey (일본어 선택 시) */}
-      {currentLanguage === 'ja' && (
-        <button
-          onClick={() => navigate('/journey')}
-          className="w-full card bg-gradient-to-r from-cyan-500 to-teal-500 text-white mb-6 text-left"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Map className="w-5 h-5" />
-                <span className="text-lg">🗾</span>
-              </div>
-              <h2 className="text-lg font-bold">일본 여행</h2>
-              <p className="text-sm opacity-90">가상 여행으로 실전 일본어</p>
-            </div>
-            <ChevronRight className="w-6 h-6 opacity-80" />
-          </div>
-        </button>
-      )}
-
-      {/* 영어권 여행 Journey (영어 선택 시) */}
-      {currentLanguage === 'en' && (
-        <button
-          onClick={() => navigate('/journey-en')}
-          className="w-full card bg-gradient-to-r from-blue-500 to-red-500 text-white mb-6 text-left"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Map className="w-5 h-5" />
-                <span className="text-lg">🇺🇸</span>
-                <span className="text-lg">🇬🇧</span>
-              </div>
-              <h2 className="text-lg font-bold">English Journey</h2>
-              <p className="text-sm opacity-90">미국 & 영국 여행으로 실전 영어</p>
-            </div>
-            <ChevronRight className="w-6 h-6 opacity-80" />
-          </div>
-        </button>
-      )}
-
-      {/* 학습 단계 미리보기 */}
-      <section className="mb-6">
-        <h3 className="text-lg font-bold text-foreground mb-3">학습 플로우</h3>
-        <div className="space-y-2">
-          {[
-            { step: 1, name: '워밍업', time: '2분', desc: '전일 학습 복습 퀴즈' },
-            { step: 2, name: '청크 학습', time: '3분', desc: '오늘의 핵심 표현' },
-            { step: 3, name: '섀도잉', time: '4분', desc: '원어민 따라 말하기' },
-            { step: 4, name: 'AI 롤플레이', time: '5분', desc: '실전 대화 연습' },
-            { step: 5, name: '마무리', time: '1분', desc: '학습 요약' },
-          ].map((item) => (
-            <div
-              key={item.step}
-              className="flex items-center gap-3 p-3 bg-white rounded-xl"
-            >
-              <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center font-bold text-sm">
-                {item.step}
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-foreground">{item.name}</p>
-                <p className="text-xs text-gray-500">{item.desc}</p>
-              </div>
-              <span className="text-sm text-gray-400">{item.time}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 나의 트랙 */}
-      {memberTrack && (
-        <section>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold text-foreground">나의 트랙</h3>
-            <button
-              onClick={() => currentMember ? navigate('/family') : navigate('/settings')}
-              className="text-sm text-primary-500 flex items-center gap-1"
-            >
-              변경 <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* 메인 트랙 */}
-          <button
-            onClick={() => navigate(`/learn?track=${memberTrack.id}`)}
-            className="card border-2 mb-2 w-full text-left hover:shadow-md transition-shadow"
-            style={{ borderColor: memberTrack.color }}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{memberTrack.icon}</span>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-bold text-foreground">{memberTrack.name}</h4>
-                  <span className="text-xs bg-primary-100 text-primary-600 px-2 py-0.5 rounded-full">메인</span>
-                </div>
-                <p className="text-sm text-gray-500">{memberTrack.description}</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </div>
-          </button>
-
-          {/* 추가 트랙들 */}
-          {currentMember?.secondaryTracks && currentMember.secondaryTracks.length > 0 && (
-            <div className="space-y-2">
-              {currentMember.secondaryTracks.map((trackId) => {
-                const track = TRACKS.find(t => t.id === trackId);
-                if (!track) return null;
-                return (
-                  <button
-                    key={trackId}
-                    onClick={() => navigate(`/learn?track=${trackId}`)}
-                    className="card border border-gray-200 bg-gray-50 w-full text-left hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{track.icon}</span>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-foreground">{track.name}</h4>
-                          <span className="text-xs bg-secondary-100 text-secondary-600 px-2 py-0.5 rounded-full">추가</span>
-                        </div>
-                        <p className="text-xs text-gray-500">{track.description}</p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </section>
-      )}
 
-      {/* 트랙 미선택 시 */}
-      {!memberTrack && (
-        <section>
-          <div className="card border-2 border-dashed border-gray-200">
-            <div className="text-center py-4">
-              <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-              <p className="text-gray-500 mb-3">학습 트랙을 선택해주세요</p>
+        {/* 최근 대화 기록 */}
+        {recentSessions.length > 0 && (
+          <section className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-foreground">최근 대화</h3>
               <button
-                onClick={() => navigate('/onboarding')}
-                className="btn-primary"
+                onClick={() => navigate('/stats')}
+                className="text-sm text-primary-600 font-medium flex items-center gap-1"
               >
-                트랙 선택하기
+                전체 보기 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-          </div>
+
+            <div className="space-y-2">
+              {recentSessions.map((session) => (
+                <div
+                  key={session.id}
+                  className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 flex items-center gap-3"
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    session.mode === 'freetalk' ? 'bg-orange-100' :
+                    session.mode === 'simulation' ? 'bg-cyan-100' : 'bg-purple-100'
+                  }`}>
+                    {session.mode === 'freetalk' ? (
+                      <MessageCircle className="w-5 h-5 text-orange-600" />
+                    ) : session.mode === 'simulation' ? (
+                      <Target className="w-5 h-5 text-cyan-600" />
+                    ) : (
+                      <Sparkles className="w-5 h-5 text-purple-600" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">{session.title}</p>
+                    <p className="text-xs text-gray-500 flex items-center gap-2">
+                      <Clock className="w-3 h-3" />
+                      {session.duration ? `${Math.floor(session.duration / 60)}분` : '방금'}
+                      <span className="text-gray-300">•</span>
+                      {new Date(session.createdAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                    </p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-300" />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 배지 & 리더보드 */}
+        <section className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => navigate('/badges')}
+            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-left hover:shadow-md transition-all"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <Award className="w-5 h-5 text-yellow-500" />
+              <span className="font-bold text-foreground">내 배지</span>
+            </div>
+            <p className="text-2xl font-bold text-foreground">{gamification.badges.length}개</p>
+            <p className="text-xs text-gray-500">획득한 배지</p>
+          </button>
+
+          <button
+            onClick={() => navigate('/leaderboard')}
+            className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-left hover:shadow-md transition-all"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <Trophy className="w-5 h-5 text-amber-500" />
+              <span className="font-bold text-foreground">리더보드</span>
+            </div>
+            <div className="flex -space-x-2">
+              {members.slice(0, 4).map((member, i) => (
+                <div
+                  key={member.id}
+                  className="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-sm"
+                  style={{ zIndex: 4 - i }}
+                >
+                  {member.avatar}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">가족 랭킹 확인</p>
+          </button>
         </section>
-      )}
 
-      {/* 공통 트랙 - 일상생활영어회화 */}
-      <section className="mt-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-bold text-foreground">공통 트랙</h3>
-          <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
-            모든 가족 공용
-          </span>
-        </div>
+        {/* 언어별 추가 기능 */}
+        {currentLanguage === 'ja' && (
+          <section className="mt-6">
+            <h3 className="text-lg font-bold text-foreground mb-3">일본어 학습</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => navigate('/kana')}
+                className="bg-gradient-to-br from-pink-500 to-rose-500 rounded-2xl p-4 text-white text-left"
+              >
+                <span className="text-2xl mb-2 block">あア</span>
+                <p className="font-bold">가나 학습</p>
+                <p className="text-xs opacity-80">히라가나 / 가타카나</p>
+              </button>
+              <button
+                onClick={() => navigate('/journey')}
+                className="bg-gradient-to-br from-cyan-500 to-teal-500 rounded-2xl p-4 text-white text-left"
+              >
+                <span className="text-2xl mb-2 block">🗾</span>
+                <p className="font-bold">일본 여행</p>
+                <p className="text-xs opacity-80">가상 여행 체험</p>
+              </button>
+            </div>
+          </section>
+        )}
 
-        <button
-          onClick={() => navigate('/learn?track=daily-life')}
-          className="card border-2 border-green-400 bg-gradient-to-r from-green-50 to-emerald-50 w-full text-left hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
-              <span className="text-3xl">🏠</span>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h4 className="font-bold text-foreground">일상생활 영어회화</h4>
+        {currentLanguage === 'en' && (
+          <section className="mt-6">
+            <h3 className="text-lg font-bold text-foreground mb-3">영어 학습</h3>
+            <button
+              onClick={() => navigate('/journey-en')}
+              className="w-full bg-gradient-to-r from-blue-500 to-red-500 rounded-2xl p-4 text-white text-left flex items-center justify-between"
+            >
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xl">🇺🇸</span>
+                  <span className="text-xl">🇬🇧</span>
+                </div>
+                <p className="font-bold">English Journey</p>
+                <p className="text-sm opacity-80">미국 & 영국 가상 여행</p>
               </div>
-              <p className="text-sm text-gray-500 mt-0.5">
-                쇼핑, 식당, 인사, 날씨 등 일상에서 바로 쓰는 표현
-              </p>
-              <div className="flex gap-2 mt-2">
-                <span className="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">
-                  🛒 쇼핑
-                </span>
-                <span className="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">
-                  🍽️ 식당
-                </span>
-                <span className="text-xs bg-white px-2 py-0.5 rounded-full text-gray-600">
-                  👋 인사
-                </span>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-green-500" />
-          </div>
-        </button>
-      </section>
+              <ChevronRight className="w-6 h-6 opacity-60" />
+            </button>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

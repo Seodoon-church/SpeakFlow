@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout, Toast } from '@/components/common';
 import {
@@ -21,9 +22,19 @@ import {
   ScenarioEnPage,
   LevelTestPage,
   AvatarChatPage,
+  LoginPage,
+  AuthCallbackPage,
 } from '@/pages';
+import { useAuthStore } from '@/stores';
 
 function App() {
+  const { initialize } = useAuthStore();
+
+  // 앱 시작 시 인증 상태 초기화
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
   return (
     <BrowserRouter>
       <Toast />
@@ -31,6 +42,8 @@ function App() {
         {/* 시작/랜딩 페이지 */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/welcome" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/level-test" element={<LevelTestPage />} />
         <Route path="/avatar-chat" element={<AvatarChatPage />} />

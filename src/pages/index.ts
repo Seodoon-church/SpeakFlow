@@ -18,3 +18,5 @@ export { default as JourneyEnPage } from './JourneyEnPage';
 export { default as ScenarioEnPage } from './ScenarioEnPage';
 export { default as LevelTestPage } from './LevelTestPage';
 export { default as AvatarChatPage } from './AvatarChatPage';
+export { default as LoginPage } from './LoginPage';
+export { default as AuthCallbackPage } from './AuthCallbackPage';

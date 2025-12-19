@@ -1,7 +1,17 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { sendFreetalkMessage } from '@/lib/claude';
+import {
+  sendFreetalkMessage,
+  generateSimulationScenario,
+  sendSimulationMessage,
+  generateSimulationFeedback
+} from '@/lib/claude';
 import type { ChatMessage } from '@/lib/claude';
+import type {
+  SimulationContext,
+  SimulationFeedback,
+  RealTimeFeedback
+} from '@/types';
 import {
   Mic,
   MicOff,
@@ -22,9 +32,16 @@ import {
   Check,
   Loader2,
   Wand2,
-  Play
+  Play,
+  Target,
+  Lightbulb,
+  Trophy,
+  ThumbsUp,
+  ArrowUp,
+  AlertCircle,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useChatHistoryStore } from '@/stores/chatHistoryStore';
 
 // 대화 모드 타입
 type ChatMode = 'free-talk' | 'scenario' | 'pronunciation' | 'simulation';
@@ -114,7 +131,9 @@ const backgrounds = [
 
 export default function AvatarChatPage() {
   const navigate = useNavigate();
+  const { saveSession, checkAndUpdateStreak } = useChatHistoryStore();
   const [chatMode, setChatMode] = useState<ChatMode>('free-talk');
+  const sessionStartTime = useRef<Date>(new Date());
   const [isRecording, setIsRecording] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(true);
@@ -125,6 +144,12 @@ export default function AvatarChatPage() {
   const [showScenarios, setShowScenarios] = useState(false);
   const [showSimulation, setShowSimulation] = useState(false);
   const [simulationInput, setSimulationInput] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [simulationContext, setSimulationContext] = useState<SimulationContext | null>(null);
+  const [isGeneratingScenario, setIsGeneratingScenario] = useState(false);
+  const [realTimeFeedback, setRealTimeFeedback] = useState<RealTimeFeedback | null>(null);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [simulationFeedback, setSimulationFeedback] = useState<SimulationFeedback | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [showSubtitles, setShowSubtitles] = useState(true);
   const [avatarSpeaking, setAvatarSpeaking] = useState(false);
@@ -188,6 +213,54 @@ export default function AvatarChatPage() {
       }
     };
   }, []);
+
+  // 대화 세션 저장
+  const saveCurrentSession = useCallback(() => {
+    if (messages.length < 2) return; // 최소 2개 메시지 이상일 때만 저장
+
+    const duration = Math.floor((new Date().getTime() - sessionStartTime.current.getTime()) / 1000);
+
+    // 모드 매핑
+    const modeMap: Record<ChatMode, 'freetalk' | 'scenario' | 'simulation'> = {
+      'free-talk': 'freetalk',
+      'scenario': 'scenario',
+      'pronunciation': 'freetalk',
+      'simulation': 'simulation',
+    };
+
+    // 제목 생성
+    let title = '프리토킹';
+    if (chatMode === 'scenario' && selectedScenario) {
+      title = selectedScenario.titleKo;
+    } else if (chatMode === 'simulation' && simulationContext) {
+      title = simulationContext.userInput.slice(0, 30) + (simulationContext.userInput.length > 30 ? '...' : '');
+    }
+
+    saveSession({
+      title,
+      mode: modeMap[chatMode],
+      language: selectedLanguage,
+      messages: messages.map(m => ({
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp.toISOString(),
+      })),
+      duration,
+      scenario: selectedScenario ? {
+        title: selectedScenario.title,
+        description: selectedScenario.description,
+      } : undefined,
+    });
+
+    // 스트릭 업데이트
+    checkAndUpdateStreak();
+  }, [messages, chatMode, selectedLanguage, selectedScenario, simulationContext, saveSession, checkAndUpdateStreak]);
+
+  // 뒤로가기 시 저장
+  const handleBack = useCallback(() => {
+    saveCurrentSession();
+    navigate(-1);
+  }, [saveCurrentSession, navigate]);
 
   // 녹음 시작
   const startRecording = () => {
@@ -359,7 +432,24 @@ export default function AvatarChatPage() {
         content: m.content,
       }));
 
-      const aiResponseContent = await sendFreetalkMessage(chatHistory);
+      let aiResponseContent: string;
+      let feedback: RealTimeFeedback | null = null;
+
+      // 모드별 분기 처리
+      if (chatMode === 'simulation' && simulationContext) {
+        // 시뮬레이션 모드
+        const result = await sendSimulationMessage(
+          chatHistory,
+          simulationContext.generatedScenario
+        );
+        aiResponseContent = result.response;
+        feedback = result.feedback;
+        setRealTimeFeedback(feedback);
+      } else {
+        // 프리토킹 모드
+        aiResponseContent = await sendFreetalkMessage(chatHistory);
+        setRealTimeFeedback(null);
+      }
 
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
@@ -427,24 +517,107 @@ export default function AvatarChatPage() {
   };
 
   // 시뮬레이션 시작
-  const startSimulation = () => {
+  const startSimulation = async () => {
     if (!simulationInput.trim()) return;
-    setShowSimulation(false);
-    setChatMode('simulation');
 
-    setIsTyping(true);
-    setTimeout(() => {
-      const setupMessage: Message = {
+    setShowSimulation(false);
+    setIsGeneratingScenario(true);
+    setChatMode('simulation');
+    setMessages([]);
+    setRealTimeFeedback(null);
+
+    try {
+      // AI가 시나리오 자동 생성
+      const scenario = await generateSimulationScenario(simulationInput, selectedLanguage);
+
+      // 시뮬레이션 컨텍스트 저장
+      const context: SimulationContext = {
+        id: Date.now().toString(),
+        userInput: simulationInput,
+        generatedScenario: scenario,
+        startedAt: new Date(),
+      };
+      setSimulationContext(context);
+
+      // 배경 자동 변경
+      const bgMapping: Record<string, string> = {
+        'subway': 'airport',
+        'restaurant': 'restaurant',
+        'cafe': 'cafe',
+        'hotel': 'home',
+        'airport': 'airport',
+        'hospital': 'office',
+        'shop': 'cafe',
+        'office': 'office',
+      };
+      const newBg = bgMapping[scenario.backgroundId] || 'office';
+      setAvatarSettings(prev => ({
+        ...prev,
+        backgroundImage: newBg,
+        language: scenario.language,
+      }));
+
+      // 첫 메시지 표시 (NPC의 오프닝)
+      const openingMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: `Perfect! Let's simulate: "${simulationInput}". I'll be the person you're talking to. Let's begin!`,
-        translation: `좋아요! "${simulationInput}" 상황을 시뮬레이션해볼게요. 제가 대화 상대가 될게요. 시작해볼까요!`,
+        content: scenario.openingLine,
+        translation: scenario.openingLineTranslation,
         timestamp: new Date(),
       };
-      setMessages([setupMessage]);
+      setMessages([openingMessage]);
+      avatarSpeak(openingMessage.content);
+
+    } catch (error) {
+      console.error('Failed to start simulation:', error);
+      // 폴백 처리
+      const fallbackMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: "Hello! I'm ready to help you practice. What would you like to say?",
+        translation: "안녕하세요! 연습을 도와드릴 준비가 됐어요. 무엇을 말씀하시겠어요?",
+        timestamp: new Date(),
+      };
+      setMessages([fallbackMessage]);
+      avatarSpeak(fallbackMessage.content);
+    } finally {
+      setIsGeneratingScenario(false);
+    }
+  };
+
+  // 시뮬레이션 종료
+  const endSimulation = async () => {
+    if (!simulationContext) return;
+
+    setIsTyping(true);
+
+    try {
+      const chatHistory: ChatMessage[] = messages.map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const feedback = await generateSimulationFeedback(
+        chatHistory,
+        simulationContext.generatedScenario
+      );
+      setSimulationFeedback(feedback);
+      setShowCompletionModal(true);
+    } catch (error) {
+      console.error('Failed to generate feedback:', error);
+      // 기본 피드백 표시
+      setSimulationFeedback({
+        overallScore: 75,
+        grammarScore: 70,
+        naturalityScore: 80,
+        wellDonePoints: ['대화를 끝까지 잘 이어나갔어요'],
+        improvementPoints: ['더 다양한 표현을 사용해 보세요'],
+        additionalExpressions: ['Thank you! (감사합니다!)'],
+      });
+      setShowCompletionModal(true);
+    } finally {
       setIsTyping(false);
-      avatarSpeak(setupMessage.content);
-    }, 1000);
+    }
   };
 
   const currentBackground = backgrounds.find(bg => bg.id === avatarSettings.backgroundImage);
@@ -466,7 +639,7 @@ export default function AvatarChatPage() {
         <div className="absolute top-0 left-0 right-0 z-20 p-4">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -754,6 +927,72 @@ export default function AvatarChatPage() {
           </AnimatePresence>
         </div>
 
+        {/* 실시간 피드백 패널 - 시뮬레이션 모드에서만 표시 */}
+        {chatMode === 'simulation' && simulationContext && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="absolute top-20 right-4 w-72 bg-gray-800/90 backdrop-blur-sm rounded-xl p-4 border border-gray-700 z-10"
+          >
+            {/* 시나리오 정보 */}
+            <div className="mb-4">
+              <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
+                <Target className="w-4 h-4 text-orange-400" />
+                목표
+              </h4>
+              <p className="text-gray-300 text-sm">
+                {simulationContext.generatedScenario.userGoal}
+              </p>
+            </div>
+
+            {/* 힌트 표현 */}
+            <div className="mb-4">
+              <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-yellow-400" />
+                유용한 표현
+              </h4>
+              <div className="space-y-1">
+                {simulationContext.generatedScenario.suggestedExpressions.slice(0, 3).map((expr, i) => (
+                  <p key={i} className="text-gray-400 text-xs">{expr}</p>
+                ))}
+              </div>
+            </div>
+
+            {/* 실시간 피드백 */}
+            {realTimeFeedback && (realTimeFeedback.grammarCorrection || realTimeFeedback.naturalExpression || realTimeFeedback.tip) && (
+              <div className="border-t border-gray-700 pt-3">
+                <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-cyan-400" />
+                  피드백
+                </h4>
+                {realTimeFeedback.grammarCorrection && (
+                  <p className="text-yellow-400 text-xs mb-1">
+                    <strong>문법:</strong> {realTimeFeedback.grammarCorrection}
+                  </p>
+                )}
+                {realTimeFeedback.naturalExpression && (
+                  <p className="text-green-400 text-xs mb-1">
+                    <strong>자연스러운 표현:</strong> {realTimeFeedback.naturalExpression}
+                  </p>
+                )}
+                {realTimeFeedback.tip && (
+                  <p className="text-blue-400 text-xs">
+                    <strong>팁:</strong> {realTimeFeedback.tip}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* 시뮬레이션 종료 버튼 */}
+            <button
+              onClick={endSimulation}
+              className="w-full mt-4 py-2 bg-orange-500/20 text-orange-400 rounded-lg text-sm hover:bg-orange-500/30 transition-colors"
+            >
+              시뮬레이션 종료
+            </button>
+          </motion.div>
+        )}
+
         {/* 모드 선택 버튼들 */}
         <div className="absolute bottom-32 left-4 flex flex-col gap-2">
           <motion.button
@@ -961,7 +1200,7 @@ export default function AvatarChatPage() {
         )}
       </AnimatePresence>
 
-      {/* 상황 시뮬레이션 모달 */}
+      {/* 상황 시뮬레이션 모달 - 개선 버전 */}
       <AnimatePresence>
         {showSimulation && (
           <motion.div
@@ -976,14 +1215,18 @@ export default function AvatarChatPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-gray-800 rounded-2xl p-6 max-w-lg w-full"
+              className="bg-gray-800 rounded-2xl p-6 max-w-lg w-full max-h-[85vh] overflow-y-auto"
             >
+              {/* 헤더 */}
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-400 to-red-400 flex items-center justify-center">
-                    <Wand2 className="w-5 h-5 text-white" />
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-400 to-red-400 flex items-center justify-center">
+                    <Wand2 className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-white">상황 시뮬레이션</h3>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">상황 시뮬레이션</h3>
+                    <p className="text-gray-400 text-sm">AI가 즉시 시나리오를 만들어드려요</p>
+                  </div>
                 </div>
                 <button
                   onClick={() => setShowSimulation(false)}
@@ -993,44 +1236,88 @@ export default function AvatarChatPage() {
                 </button>
               </div>
 
-              <p className="text-gray-400 mb-4">
-                어떤 상황을 연습하고 싶으세요? 상상하는 상황을 자유롭게 설명해주세요!
-              </p>
-
-              <div className="space-y-3 mb-4">
-                <p className="text-sm text-gray-500">예시:</p>
-                {[
-                  '도쿄 라멘집에서 주문하고 싶어요',
-                  '뉴욕에서 택시 타고 호텔까지 가고 싶어요',
-                  '영어 면접에서 자기소개를 해야해요',
-                  '파리 약국에서 두통약을 사고 싶어요',
-                ].map((example, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSimulationInput(example)}
-                    className="block w-full text-left text-sm text-gray-400 hover:text-white bg-gray-700/50 hover:bg-gray-700 px-3 py-2 rounded-lg transition-colors"
-                  >
-                    "{example}"
-                  </button>
-                ))}
+              {/* 언어 선택 */}
+              <div className="mb-4">
+                <label className="text-white text-sm font-medium mb-2 block">연습할 언어</label>
+                <div className="flex gap-2">
+                  {[
+                    { id: 'en', label: '영어', flag: '🇺🇸' },
+                    { id: 'ja', label: '일본어', flag: '🇯🇵' },
+                    { id: 'zh', label: '중국어', flag: '🇨🇳' },
+                  ].map((lang) => (
+                    <button
+                      key={lang.id}
+                      onClick={() => setSelectedLanguage(lang.id)}
+                      className={`flex-1 py-2 px-3 rounded-lg text-sm transition-colors ${
+                        selectedLanguage === lang.id
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                    >
+                      {lang.flag} {lang.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <textarea
-                value={simulationInput}
-                onChange={(e) => setSimulationInput(e.target.value)}
-                placeholder="연습하고 싶은 상황을 설명해주세요..."
-                className="w-full h-24 bg-gray-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500 resize-none"
-              />
+              {/* 상황 설명 */}
+              <div className="mb-4">
+                <label className="text-white text-sm font-medium mb-2 block">
+                  어떤 상황을 연습하고 싶으세요?
+                </label>
+                <textarea
+                  value={simulationInput}
+                  onChange={(e) => setSimulationInput(e.target.value)}
+                  placeholder="예: 도쿄 라멘집에서 주문하고 싶어요"
+                  className="w-full h-28 bg-gray-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500 placeholder-gray-500 resize-none"
+                />
+              </div>
 
+              {/* 예시 카테고리 */}
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 mb-2">예시 상황 (클릭해서 선택)</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { icon: '🍜', text: '레스토랑에서 주문하기' },
+                    { icon: '🚕', text: '택시 타고 목적지 가기' },
+                    { icon: '💼', text: '영어 면접 보기' },
+                    { icon: '🏨', text: '호텔 체크인하기' },
+                    { icon: '💊', text: '약국에서 약 사기' },
+                    { icon: '🚇', text: '지하철 길 물어보기' },
+                    { icon: '🛍️', text: '쇼핑몰에서 환불하기' },
+                    { icon: '☕', text: '카페에서 주문하기' },
+                  ].map((example, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setSimulationInput(example.text)}
+                      className="flex items-center gap-2 p-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg text-left transition-colors"
+                    >
+                      <span className="text-xl">{example.icon}</span>
+                      <span className="text-gray-300 text-sm">{example.text}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 시작 버튼 */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={startSimulation}
-                disabled={!simulationInput.trim()}
-                className="w-full mt-4 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={!simulationInput.trim() || isGeneratingScenario}
+                className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                <Sparkles className="w-5 h-5" />
-                시뮬레이션 시작
+                {isGeneratingScenario ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    시나리오 생성 중...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5" />
+                    시뮬레이션 시작
+                  </>
+                )}
               </motion.button>
             </motion.div>
           </motion.div>
@@ -1111,6 +1398,122 @@ export default function AvatarChatPage() {
                 <RefreshCw className="w-4 h-4" />
                 아바타 다시 선택
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 시뮬레이션 완료 모달 */}
+      <AnimatePresence>
+        {showCompletionModal && simulationFeedback && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gray-800 rounded-2xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto"
+            >
+              {/* 헤더 */}
+              <div className="text-center mb-6">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mb-4">
+                  <Trophy className="w-10 h-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white">시뮬레이션 완료!</h3>
+                <p className="text-gray-400 mt-2">총점: {simulationFeedback.overallScore}점</p>
+              </div>
+
+              {/* 점수 상세 */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-gray-700/50 rounded-xl p-4 text-center">
+                  <p className="text-yellow-400 text-2xl font-bold">{simulationFeedback.grammarScore}</p>
+                  <p className="text-gray-400 text-sm">문법</p>
+                </div>
+                <div className="bg-gray-700/50 rounded-xl p-4 text-center">
+                  <p className="text-green-400 text-2xl font-bold">{simulationFeedback.naturalityScore}</p>
+                  <p className="text-gray-400 text-sm">자연스러움</p>
+                </div>
+              </div>
+
+              {/* 잘한 점 */}
+              <div className="mb-4">
+                <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
+                  <ThumbsUp className="w-4 h-4 text-green-400" />
+                  잘한 점
+                </h4>
+                <ul className="space-y-1">
+                  {simulationFeedback.wellDonePoints.map((point, i) => (
+                    <li key={i} className="text-gray-300 text-sm flex items-start gap-2">
+                      <Check className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* 개선점 */}
+              <div className="mb-4">
+                <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
+                  <ArrowUp className="w-4 h-4 text-yellow-400" />
+                  개선점
+                </h4>
+                <ul className="space-y-1">
+                  {simulationFeedback.improvementPoints.map((point, i) => (
+                    <li key={i} className="text-gray-300 text-sm flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* 추가 표현 */}
+              <div className="mb-6">
+                <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  추가로 쓸 수 있는 표현
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {simulationFeedback.additionalExpressions.map((expr, i) => (
+                    <span key={i} className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-xs">
+                      {expr}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* 버튼들 */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowCompletionModal(false);
+                    setSimulationContext(null);
+                    setSimulationFeedback(null);
+                    setChatMode('free-talk');
+                    setMessages([]);
+                    setRealTimeFeedback(null);
+                  }}
+                  className="flex-1 py-3 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-colors"
+                >
+                  프리토킹으로
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCompletionModal(false);
+                    setSimulationContext(null);
+                    setSimulationFeedback(null);
+                    setSimulationInput('');
+                    setShowSimulation(true);
+                  }}
+                  className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold"
+                >
+                  다른 상황 연습
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

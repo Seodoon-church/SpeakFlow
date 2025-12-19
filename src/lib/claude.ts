@@ -711,3 +711,689 @@ function getFallbackSuggestedResponses(context: RoleplayContext): string[] {
 
   return trackFallbacks[Math.floor(Math.random() * trackFallbacks.length)];
 }
+
+// ========== 상황 시뮬레이션 관련 함수 ==========
+
+import type { GeneratedScenario, SimulationFeedback, RealTimeFeedback } from '@/types';
+
+// 시나리오 생성용 시스템 프롬프트
+const SIMULATION_GENERATOR_PROMPT = `You are a simulation scenario generator for language learning.
+When given a user's situation description in Korean, generate a realistic roleplay scenario.
+
+INSTRUCTIONS:
+1. Analyze the user's input to understand the desired situation
+2. Determine the target language based on context clues (default to English if unclear)
+3. Generate a scenario with appropriate NPC, background, and goal
+4. Create 3-5 helpful expressions the user might need
+5. Write an opening line in the target language
+
+RESPONSE FORMAT (JSON only, no markdown):
+{
+  "background": "배경 설명 (한국어)",
+  "backgroundId": "cafe|restaurant|airport|hotel|hospital|shop|subway|office",
+  "npcRole": "NPC 역할 (한국어)",
+  "npcName": "NPC 이름 (해당 언어에 맞게)",
+  "userGoal": "사용자 목표 (한국어)",
+  "difficulty": "easy|medium|hard",
+  "language": "en|ja|zh",
+  "suggestedExpressions": ["표현1 (번역)", "표현2 (번역)", "표현3 (번역)"],
+  "openingLine": "NPC의 첫 대사 (목표 언어로)",
+  "openingLineTranslation": "첫 대사 한글 번역"
+}`;
+
+// 시뮬레이션 대화용 시스템 프롬프트 빌더
+function buildSimulationSystemPrompt(scenario: GeneratedScenario): string {
+  const languageNames: Record<string, string> = {
+    'en': 'English',
+    'ja': 'Japanese',
+    'zh': 'Chinese',
+  };
+  const langName = languageNames[scenario.language] || 'English';
+
+  return `You are roleplaying as "${scenario.npcName}" (${scenario.npcRole}) in a language learning simulation.
+
+SCENARIO:
+- Location: ${scenario.background}
+- Your Role: ${scenario.npcRole}
+- User's Goal: ${scenario.userGoal}
+- Difficulty: ${scenario.difficulty}
+- Language: ${langName}
+
+INSTRUCTIONS:
+1. Stay in character as ${scenario.npcRole}
+2. Speak primarily in ${langName}
+3. Keep responses natural and appropriate for the setting (1-3 sentences)
+4. If the user makes language mistakes, gently guide them by rephrasing correctly
+5. Help the user achieve their goal: "${scenario.userGoal}"
+6. Be patient and encouraging
+
+RESPONSE FORMAT:
+Respond naturally as the NPC. After your response, add feedback on a new line starting with [FEEDBACK]:
+
+Your in-character response here
+
+[FEEDBACK]
+grammar: (brief grammar note if needed, or "ok")
+natural: (more natural way to say what the user said, or "good")
+tip: (helpful tip for this situation, or "none")`;
+}
+
+// 피드백 생성용 시스템 프롬프트
+const SIMULATION_FEEDBACK_PROMPT = `You are a language learning evaluator. Analyze the completed simulation conversation and provide comprehensive feedback in Korean.
+
+RESPONSE FORMAT (JSON only, no markdown):
+{
+  "overallScore": 85,
+  "grammarScore": 80,
+  "naturalityScore": 85,
+  "wellDonePoints": ["잘한 점 1", "잘한 점 2"],
+  "improvementPoints": ["개선점 1", "개선점 2"],
+  "additionalExpressions": ["추가 표현 1 (번역)", "추가 표현 2 (번역)"]
+}`;
+
+// 시나리오 자동 생성
+export async function generateSimulationScenario(
+  userInput: string,
+  targetLanguage?: string
+): Promise<GeneratedScenario> {
+  const prompt = targetLanguage
+    ? `${userInput}\n\n(Target language: ${targetLanguage})`
+    : userInput;
+
+  try {
+    const response = await callAnthropicAPI(
+      [{ role: 'user', content: prompt }],
+      SIMULATION_GENERATOR_PROMPT
+    );
+
+    // JSON 파싱 시도
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return parsed as GeneratedScenario;
+    }
+    throw new Error('Invalid JSON response');
+  } catch (error) {
+    console.error('Failed to generate scenario:', error);
+    return getDefaultScenario(userInput, targetLanguage);
+  }
+}
+
+// 시뮬레이션 대화 메시지 전송
+export async function sendSimulationMessage(
+  messages: ChatMessage[],
+  scenario: GeneratedScenario
+): Promise<{ response: string; feedback: RealTimeFeedback }> {
+  const systemPrompt = buildSimulationSystemPrompt(scenario);
+
+  try {
+    const response = await callAnthropicAPI(messages, systemPrompt);
+    return parseSimulationResponse(response);
+  } catch (error) {
+    console.error('Simulation message failed:', error);
+    return {
+      response: getSimulationFallbackResponse(scenario),
+      feedback: {}
+    };
+  }
+}
+
+// 시뮬레이션 완료 피드백 생성
+export async function generateSimulationFeedback(
+  messages: ChatMessage[],
+  scenario: GeneratedScenario
+): Promise<SimulationFeedback> {
+  const conversationSummary = messages
+    .map(m => `${m.role}: ${m.content}`)
+    .join('\n');
+
+  const prompt = `Scenario: ${scenario.userGoal}
+Language: ${scenario.language}
+Difficulty: ${scenario.difficulty}
+
+Conversation:
+${conversationSummary}
+
+Please evaluate this language learning simulation and provide feedback in Korean.`;
+
+  try {
+    const response = await callAnthropicAPI(
+      [{ role: 'user', content: prompt }],
+      SIMULATION_FEEDBACK_PROMPT
+    );
+
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]) as SimulationFeedback;
+    }
+    throw new Error('Invalid JSON response');
+  } catch (error) {
+    console.error('Failed to generate feedback:', error);
+    return getDefaultFeedback();
+  }
+}
+
+// 응답 파싱 함수
+function parseSimulationResponse(response: string): {
+  response: string;
+  feedback: RealTimeFeedback;
+} {
+  const parts = response.split('[FEEDBACK]');
+  const mainResponse = parts[0].trim();
+
+  const feedback: RealTimeFeedback = {};
+  if (parts[1]) {
+    const feedbackText = parts[1];
+    const grammarMatch = feedbackText.match(/grammar:\s*(.+)/i);
+    const naturalMatch = feedbackText.match(/natural:\s*(.+)/i);
+    const tipMatch = feedbackText.match(/tip:\s*(.+)/i);
+
+    if (grammarMatch && grammarMatch[1].trim().toLowerCase() !== 'ok') {
+      feedback.grammarCorrection = grammarMatch[1].trim();
+    }
+    if (naturalMatch && naturalMatch[1].trim().toLowerCase() !== 'good') {
+      feedback.naturalExpression = naturalMatch[1].trim();
+    }
+    if (tipMatch && tipMatch[1].trim().toLowerCase() !== 'none') {
+      feedback.tip = tipMatch[1].trim();
+    }
+  }
+
+  return { response: mainResponse, feedback };
+}
+
+// 기본 시나리오 (폴백)
+function getDefaultScenario(userInput: string, targetLanguage?: string): GeneratedScenario {
+  const lang = targetLanguage || 'en';
+  const openingLines: Record<string, { line: string; translation: string }> = {
+    'en': { line: "Hello! How can I help you today?", translation: "안녕하세요! 오늘 어떻게 도와드릴까요?" },
+    'ja': { line: "いらっしゃいませ。何かお手伝いしましょうか?", translation: "어서오세요. 무엇을 도와드릴까요?" },
+    'zh': { line: "您好！请问有什么可以帮您的?", translation: "안녕하세요! 무엇을 도와드릴까요?" },
+  };
+
+  const opening = openingLines[lang] || openingLines['en'];
+
+  return {
+    background: "일반 대화 상황",
+    backgroundId: "office",
+    npcRole: "친절한 직원",
+    npcName: lang === 'ja' ? "田中さん" : lang === 'zh' ? "小王" : "Alex",
+    userGoal: userInput,
+    difficulty: "medium",
+    language: lang,
+    suggestedExpressions: [
+      "Excuse me... (실례합니다)",
+      "Could you help me with...? (~를 도와주시겠어요?)",
+      "Thank you for your help! (도움 감사합니다!)",
+    ],
+    openingLine: opening.line,
+    openingLineTranslation: opening.translation,
+  };
+}
+
+// 시뮬레이션 폴백 응답
+function getSimulationFallbackResponse(scenario: GeneratedScenario): string {
+  const fallbacks: Record<string, string[]> = {
+    'en': [
+      "I understand. Could you tell me more about what you need?",
+      "Sure, I can help with that. What specifically would you like?",
+      "No problem! Is there anything else?",
+    ],
+    'ja': [
+      "かしこまりました。もう少し詳しく教えていただけますか?",
+      "はい、お手伝いできます。具体的に何をお探しですか?",
+      "問題ありません。他に何かありますか?",
+    ],
+    'zh': [
+      "我明白了。您能告诉我更多细节吗?",
+      "好的，我可以帮您。您具体需要什么?",
+      "没问题！还有其他需要吗?",
+    ],
+  };
+
+  const responses = fallbacks[scenario.language] || fallbacks['en'];
+  return responses[Math.floor(Math.random() * responses.length)];
+}
+
+// 기본 피드백 (폴백)
+function getDefaultFeedback(): SimulationFeedback {
+  return {
+    overallScore: 75,
+    grammarScore: 70,
+    naturalityScore: 80,
+    wellDonePoints: [
+      "대화를 끝까지 잘 이어나갔어요",
+      "기본적인 의사소통을 성공적으로 했어요",
+    ],
+    improvementPoints: [
+      "더 다양한 표현을 사용해 보세요",
+      "상황에 맞는 인사말을 추가하면 좋겠어요",
+    ],
+    additionalExpressions: [
+      "Thank you so much! (정말 감사합니다!)",
+      "I appreciate your help. (도움에 감사드려요.)",
+    ],
+  };
+}
+
+// ========== 레벨 테스트 말하기 분석 ==========
+
+const SPEAKING_ANALYSIS_PROMPT = `You are a language proficiency evaluator analyzing a learner's speaking performance.
+
+TASK:
+1. Compare the user's speech with the expected prompt
+2. Check for correct pronunciation (based on transcription accuracy)
+3. Evaluate grammar, vocabulary, and fluency
+4. Consider keyword usage
+
+RESPONSE FORMAT (JSON only, no markdown):
+{
+  "score": 75,
+  "feedback": "피드백 내용 (한국어로)"
+}
+
+Score guidelines:
+- 90-100: Excellent - natural, accurate, confident delivery
+- 75-89: Good - minor errors, generally clear
+- 55-74: Fair - noticeable errors but understandable
+- 40-54: Needs work - significant gaps
+- Below 40: Beginner - major difficulties`;
+
+// 말하기 분석 함수 (레벨 테스트용)
+export async function analyzeSpeaking(
+  transcript: string,
+  expectedPrompt: string,
+  expectedKeywords: string[],
+  targetLanguage: string
+): Promise<{ score: number; feedback: string }> {
+  const prompt = `Target Language: ${targetLanguage}
+Expected Prompt: ${expectedPrompt}
+Expected Keywords: ${expectedKeywords.join(', ')}
+User's Speech (transcription): ${transcript}
+
+Evaluate this speaking performance and provide a score (0-100) with brief feedback in Korean.`;
+
+  try {
+    const response = await callAnthropicAPI(
+      [{ role: 'user', content: prompt }],
+      SPEAKING_ANALYSIS_PROMPT
+    );
+
+    // JSON 파싱 시도
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        score: Math.max(0, Math.min(100, parsed.score || 50)),
+        feedback: parsed.feedback || '분석이 완료되었습니다.',
+      };
+    }
+    throw new Error('Invalid JSON response');
+  } catch (error) {
+    console.error('Speaking analysis failed:', error);
+    // 폴백: 간단한 규칙 기반 점수
+    return calculateFallbackSpeakingScore(transcript, expectedKeywords);
+  }
+}
+
+// 폴백 말하기 점수 계산
+function calculateFallbackSpeakingScore(
+  transcript: string,
+  expectedKeywords: string[]
+): { score: number; feedback: string } {
+  if (!transcript.trim()) {
+    return { score: 20, feedback: '음성이 인식되지 않았습니다. 조용한 환경에서 다시 시도해 보세요.' };
+  }
+
+  const words = transcript.toLowerCase().split(/\s+/);
+  const wordCount = words.length;
+
+  // 키워드 매칭 점수
+  let keywordMatches = 0;
+  for (const keyword of expectedKeywords) {
+    if (transcript.toLowerCase().includes(keyword.toLowerCase())) {
+      keywordMatches++;
+    }
+  }
+  const keywordScore = expectedKeywords.length > 0
+    ? (keywordMatches / expectedKeywords.length) * 40
+    : 20;
+
+  // 단어 수 기반 점수
+  const lengthScore = Math.min(30, wordCount * 3);
+
+  // 기본 점수 + 키워드 + 길이
+  const totalScore = Math.round(30 + keywordScore + lengthScore);
+  const finalScore = Math.max(20, Math.min(100, totalScore));
+
+  // 피드백 생성
+  let feedback = '';
+  if (finalScore >= 80) {
+    feedback = '아주 잘하셨어요! 발음과 표현이 자연스럽습니다.';
+  } else if (finalScore >= 60) {
+    feedback = '잘하셨어요! 조금 더 다양한 표현을 사용해 보세요.';
+  } else if (finalScore >= 40) {
+    feedback = '좋은 시도예요! 핵심 표현을 더 연습해 보세요.';
+  } else {
+    feedback = '기초 표현부터 차근차근 연습해 보세요.';
+  }
+
+  return { score: finalScore, feedback };
+}
+
+// ========== 발음 평가 기능 ==========
+
+export interface PronunciationResult {
+  overallScore: number;           // 전체 점수 (0-100)
+  accuracyScore: number;          // 정확도 점수
+  fluencyScore: number;           // 유창성 점수
+  stressScore: number;            // 강세/억양 점수
+  matchedWords: string[];         // 정확하게 발음한 단어들
+  mispronounced: {                // 잘못 발음한 단어들
+    expected: string;
+    heard: string;
+    tip: string;
+  }[];
+  feedback: string;               // 전체 피드백 (한국어)
+  practiceRecommendations: string[]; // 연습 추천사항
+}
+
+const PRONUNCIATION_ANALYSIS_PROMPT = `You are a pronunciation coach analyzing speech from a language learner.
+
+TASK:
+1. Compare the expected text with what was actually spoken
+2. Identify correctly pronounced words vs mispronounced words
+3. Analyze fluency (natural flow, pauses, speed)
+4. Evaluate stress and intonation patterns
+5. Provide actionable feedback in Korean
+
+RESPONSE FORMAT (JSON only, no markdown):
+{
+  "overallScore": 75,
+  "accuracyScore": 70,
+  "fluencyScore": 80,
+  "stressScore": 75,
+  "matchedWords": ["word1", "word2"],
+  "mispronounced": [
+    {
+      "expected": "expected word",
+      "heard": "what was heard",
+      "tip": "발음 교정 팁 (한국어로)"
+    }
+  ],
+  "feedback": "전체 피드백 (한국어로)",
+  "practiceRecommendations": ["연습 추천 1", "연습 추천 2"]
+}
+
+Score guidelines:
+- 90-100: Native-like pronunciation
+- 75-89: Clear and easily understood
+- 60-74: Understandable with some effort
+- 45-59: Noticeable pronunciation issues
+- Below 45: Significant pronunciation challenges`;
+
+// 발음 평가 함수
+export async function analyzePronunciation(
+  transcript: string,
+  expectedText: string,
+  targetLanguage: string = 'en'
+): Promise<PronunciationResult> {
+  const prompt = `Target Language: ${targetLanguage}
+Expected Text: "${expectedText}"
+Actual Speech (STT result): "${transcript}"
+
+Analyze the pronunciation and provide detailed feedback.`;
+
+  try {
+    const response = await callAnthropicAPI(
+      [{ role: 'user', content: prompt }],
+      PRONUNCIATION_ANALYSIS_PROMPT
+    );
+
+    // JSON 파싱
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        overallScore: Math.max(0, Math.min(100, parsed.overallScore || 50)),
+        accuracyScore: Math.max(0, Math.min(100, parsed.accuracyScore || 50)),
+        fluencyScore: Math.max(0, Math.min(100, parsed.fluencyScore || 50)),
+        stressScore: Math.max(0, Math.min(100, parsed.stressScore || 50)),
+        matchedWords: parsed.matchedWords || [],
+        mispronounced: parsed.mispronounced || [],
+        feedback: parsed.feedback || '발음 분석이 완료되었습니다.',
+        practiceRecommendations: parsed.practiceRecommendations || [],
+      };
+    }
+    throw new Error('Invalid JSON response');
+  } catch (error) {
+    console.error('Pronunciation analysis failed:', error);
+    return calculateFallbackPronunciationScore(transcript, expectedText);
+  }
+}
+
+// 폴백 발음 점수 계산
+function calculateFallbackPronunciationScore(
+  transcript: string,
+  expectedText: string
+): PronunciationResult {
+  if (!transcript.trim()) {
+    return {
+      overallScore: 0,
+      accuracyScore: 0,
+      fluencyScore: 0,
+      stressScore: 0,
+      matchedWords: [],
+      mispronounced: [],
+      feedback: '음성이 인식되지 않았습니다. 조용한 환경에서 다시 시도해 보세요.',
+      practiceRecommendations: ['마이크 설정을 확인해 보세요', '조용한 환경에서 다시 시도해 보세요'],
+    };
+  }
+
+  const expectedWords = expectedText.toLowerCase().replace(/[.,!?;:'"]/g, '').split(/\s+/);
+  const spokenWords = transcript.toLowerCase().replace(/[.,!?;:'"]/g, '').split(/\s+/);
+
+  // 일치하는 단어 찾기
+  const matchedWords: string[] = [];
+  const mispronounced: { expected: string; heard: string; tip: string }[] = [];
+
+  expectedWords.forEach((expected, index) => {
+    const spoken = spokenWords[index] || '';
+    if (expected === spoken) {
+      matchedWords.push(expected);
+    } else if (spoken) {
+      // 유사성 체크 (레벤슈타인 거리 간이 버전)
+      const similarity = calculateSimilarity(expected, spoken);
+      if (similarity > 0.7) {
+        matchedWords.push(expected);
+      } else {
+        mispronounced.push({
+          expected,
+          heard: spoken,
+          tip: `"${expected}" 발음을 천천히 연습해 보세요.`,
+        });
+      }
+    }
+  });
+
+  // 점수 계산
+  const accuracyScore = expectedWords.length > 0
+    ? Math.round((matchedWords.length / expectedWords.length) * 100)
+    : 0;
+  const fluencyScore = Math.min(100, Math.round(spokenWords.length / expectedWords.length * 100));
+  const stressScore = Math.round((accuracyScore + fluencyScore) / 2);
+  const overallScore = Math.round((accuracyScore * 0.5) + (fluencyScore * 0.3) + (stressScore * 0.2));
+
+  // 피드백 생성
+  let feedback = '';
+  if (overallScore >= 80) {
+    feedback = '훌륭해요! 발음이 정확하고 자연스럽습니다.';
+  } else if (overallScore >= 60) {
+    feedback = '잘하고 있어요! 몇몇 단어의 발음을 더 연습해 보세요.';
+  } else if (overallScore >= 40) {
+    feedback = '좋은 시도예요! 원어민 음성을 들으며 따라하면 도움이 됩니다.';
+  } else {
+    feedback = '천천히 한 단어씩 연습해 보세요. 꾸준히 하면 늘어요!';
+  }
+
+  const practiceRecommendations: string[] = [];
+  if (mispronounced.length > 0) {
+    practiceRecommendations.push(`"${mispronounced[0].expected}" 발음을 집중적으로 연습해 보세요`);
+  }
+  if (fluencyScore < 70) {
+    practiceRecommendations.push('문장을 끊지 않고 자연스럽게 이어서 말해 보세요');
+  }
+  if (practiceRecommendations.length === 0) {
+    practiceRecommendations.push('다른 문장도 연습해 보세요!');
+  }
+
+  return {
+    overallScore,
+    accuracyScore,
+    fluencyScore,
+    stressScore,
+    matchedWords,
+    mispronounced,
+    feedback,
+    practiceRecommendations,
+  };
+}
+
+// 두 문자열의 유사도 계산 (0-1)
+function calculateSimilarity(str1: string, str2: string): number {
+  if (str1 === str2) return 1;
+  if (!str1 || !str2) return 0;
+
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+
+  if (longer.length === 0) return 1;
+
+  // 간단한 유사도 계산
+  let matches = 0;
+  for (let i = 0; i < shorter.length; i++) {
+    if (longer.includes(shorter[i])) {
+      matches++;
+    }
+  }
+
+  return matches / longer.length;
+}
+
+// 발음 연습용 문장 생성
+export async function generatePronunciationSentences(
+  targetLanguage: string,
+  difficulty: 'beginner' | 'intermediate' | 'advanced',
+  focusArea?: string // 예: 'r/l sounds', 'th sounds', etc.
+): Promise<{ sentence: string; translation: string; phonetics?: string }[]> {
+  const prompt = `Generate 5 practice sentences for pronunciation training.
+
+Target Language: ${targetLanguage}
+Difficulty: ${difficulty}
+${focusArea ? `Focus Area: ${focusArea}` : ''}
+
+Return JSON array:
+[
+  {
+    "sentence": "The sentence in target language",
+    "translation": "한국어 번역",
+    "phonetics": "optional IPA or phonetic guide"
+  }
+]`;
+
+  try {
+    const response = await callAnthropicAPI(
+      [{ role: 'user', content: prompt }],
+      'You generate pronunciation practice sentences. Return only valid JSON array.'
+    );
+
+    const jsonMatch = response.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    throw new Error('Invalid response');
+  } catch (error) {
+    console.error('Failed to generate sentences:', error);
+    return getFallbackPronunciationSentences(targetLanguage, difficulty);
+  }
+}
+
+// 폴백 발음 연습 문장
+function getFallbackPronunciationSentences(
+  targetLanguage: string,
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
+): { sentence: string; translation: string; phonetics?: string }[] {
+  const sentences: Record<string, Record<string, { sentence: string; translation: string }[]>> = {
+    en: {
+      beginner: [
+        { sentence: 'Hello, how are you?', translation: '안녕하세요, 어떻게 지내세요?' },
+        { sentence: 'Nice to meet you.', translation: '만나서 반갑습니다.' },
+        { sentence: 'Thank you very much.', translation: '정말 감사합니다.' },
+        { sentence: 'What is your name?', translation: '이름이 뭐예요?' },
+        { sentence: 'I am from Korea.', translation: '저는 한국에서 왔어요.' },
+      ],
+      intermediate: [
+        { sentence: 'Could you please repeat that?', translation: '다시 한번 말씀해 주시겠어요?' },
+        { sentence: 'I would like to make a reservation.', translation: '예약을 하고 싶습니다.' },
+        { sentence: 'The weather is beautiful today.', translation: '오늘 날씨가 정말 좋네요.' },
+        { sentence: 'I am learning English.', translation: '저는 영어를 배우고 있어요.' },
+        { sentence: 'Where is the nearest subway station?', translation: '가장 가까운 지하철역이 어디예요?' },
+      ],
+      advanced: [
+        { sentence: 'I thoroughly enjoyed the presentation.', translation: '프레젠테이션을 정말 즐겁게 들었습니다.' },
+        { sentence: 'The comprehensive analysis revealed interesting patterns.', translation: '종합적인 분석에서 흥미로운 패턴이 드러났습니다.' },
+        { sentence: 'Could you elaborate on that particular aspect?', translation: '그 특정 측면에 대해 자세히 설명해 주시겠어요?' },
+        { sentence: 'The unprecedented circumstances require immediate attention.', translation: '전례 없는 상황에 즉각적인 관심이 필요합니다.' },
+        { sentence: 'Your contribution has been invaluable.', translation: '귀하의 기여는 매우 소중했습니다.' },
+      ],
+    },
+    ja: {
+      beginner: [
+        { sentence: 'おはようございます。', translation: '좋은 아침이에요.' },
+        { sentence: 'ありがとうございます。', translation: '감사합니다.' },
+        { sentence: 'すみません。', translation: '실례합니다.' },
+        { sentence: 'これはいくらですか？', translation: '이것은 얼마예요?' },
+        { sentence: 'トイレはどこですか？', translation: '화장실은 어디예요?' },
+      ],
+      intermediate: [
+        { sentence: 'お時間よろしいですか？', translation: '시간 괜찮으세요?' },
+        { sentence: '予約したいのですが。', translation: '예약하고 싶은데요.' },
+        { sentence: '少々お待ちください。', translation: '잠시만 기다려 주세요.' },
+        { sentence: 'お先に失礼します。', translation: '먼저 실례하겠습니다.' },
+        { sentence: 'とても美味しかったです。', translation: '정말 맛있었어요.' },
+      ],
+      advanced: [
+        { sentence: 'ご検討いただければ幸いです。', translation: '검토해 주시면 감사하겠습니다.' },
+        { sentence: '恐れ入りますが、お名前をお伺いしてもよろしいでしょうか。', translation: '죄송하지만, 성함을 여쭤봐도 될까요?' },
+        { sentence: 'お忙しいところ申し訳ございません。', translation: '바쁘신 중에 죄송합니다.' },
+        { sentence: 'ご無沙汰しております。', translation: '오래간만입니다.' },
+        { sentence: 'お手数をおかけして申し訳ありません。', translation: '수고를 끼쳐 드려 죄송합니다.' },
+      ],
+    },
+    zh: {
+      beginner: [
+        { sentence: '你好！', translation: '안녕하세요!' },
+        { sentence: '谢谢你。', translation: '감사합니다.' },
+        { sentence: '对不起。', translation: '죄송합니다.' },
+        { sentence: '这个多少钱？', translation: '이것은 얼마예요?' },
+        { sentence: '请问，厕所在哪里？', translation: '실례합니다, 화장실이 어디예요?' },
+      ],
+      intermediate: [
+        { sentence: '你能帮我一下吗？', translation: '저를 도와주실 수 있나요?' },
+        { sentence: '我想预订一个房间。', translation: '방을 예약하고 싶습니다.' },
+        { sentence: '请稍等一下。', translation: '잠시만 기다려 주세요.' },
+        { sentence: '天气真好！', translation: '날씨가 정말 좋네요!' },
+        { sentence: '我正在学习中文。', translation: '저는 중국어를 배우고 있어요.' },
+      ],
+      advanced: [
+        { sentence: '非常感谢您的帮助。', translation: '도움에 정말 감사드립니다.' },
+        { sentence: '我对这个项目很感兴趣。', translation: '저는 이 프로젝트에 매우 관심이 있습니다.' },
+        { sentence: '请问您方便的时候能联系我吗？', translation: '편하실 때 연락해 주시겠어요?' },
+        { sentence: '我们应该仔细考虑这个问题。', translation: '우리는 이 문제를 신중하게 고려해야 합니다.' },
+        { sentence: '期待与您进一步合作。', translation: '귀하와의 추가 협력을 기대합니다.' },
+      ],
+    },
+  };
+
+  return sentences[targetLanguage]?.[difficulty] || sentences['en']['beginner'];
+}
