@@ -9,8 +9,10 @@ import {
   Info,
   Mail,
   Globe,
+  Crown,
+  Sparkles,
 } from 'lucide-react';
-import { useLearningStore, TRACKS, useFamilyStore, useLanguageStore } from '@/stores';
+import { useLearningStore, TRACKS, useFamilyStore, useLanguageStore, useSubscriptionStore } from '@/stores';
 import { LANGUAGES, type LearningLanguage } from '@/types';
 
 export default function SettingsPage() {
@@ -19,12 +21,15 @@ export default function SettingsPage() {
   const currentMember = members.find((m) => m.id === currentMemberId);
   const { currentTrack, setCurrentTrack } = useLearningStore();
   const { currentLanguage, setLanguage } = useLanguageStore();
+  const { subscription, getCurrentPlan, isPremium, getDaysRemaining } = useSubscriptionStore();
   const [showTrackModal, setShowTrackModal] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   const currentLangInfo = LANGUAGES.find((l) => l.id === currentLanguage);
+  const currentPlan = getCurrentPlan();
+  const daysRemaining = getDaysRemaining();
 
   const handleLanguageChange = (langId: LearningLanguage) => {
     setLanguage(langId);
@@ -68,6 +73,42 @@ export default function SettingsPage() {
               변경
             </button>
           </div>
+        </div>
+      </section>
+
+      {/* 구독 섹션 */}
+      <section className="px-4 mb-6">
+        <h3 className="text-sm font-semibold text-gray-500 mb-2 px-1">구독</h3>
+        <div className="card">
+          <button
+            onClick={() => navigate('/pricing')}
+            className={`w-full p-4 rounded-xl ${
+              isPremium()
+                ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white'
+                : 'bg-gradient-to-r from-gray-100 to-gray-50'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {isPremium() ? (
+                  <Crown className="w-6 h-6" />
+                ) : (
+                  <Sparkles className="w-6 h-6 text-gray-400" />
+                )}
+                <div className="text-left">
+                  <p className="font-bold">{currentPlan.nameKo} 플랜</p>
+                  <p className={`text-sm ${isPremium() ? 'opacity-80' : 'text-gray-500'}`}>
+                    {subscription.status === 'trial'
+                      ? `무료 체험 ${daysRemaining}일 남음`
+                      : isPremium()
+                      ? '무제한 학습 이용 중'
+                      : '프리미엄으로 업그레이드'}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className={`w-5 h-5 ${isPremium() ? 'text-white/60' : 'text-gray-300'}`} />
+            </div>
+          </button>
         </div>
       </section>
 

@@ -24,6 +24,12 @@ import {
   AvatarChatPage,
   LoginPage,
   AuthCallbackPage,
+  WordQuizPage,
+  GrammarPage,
+  WritingPage,
+  QuickLearnPage,
+  MistakesPage,
+  PricingPage,
 } from '@/pages';
 import { useAuthStore } from '@/stores';
 
@@ -69,6 +75,12 @@ function App() {
         <Route path="/scenario" element={<ScenarioPage />} />
         <Route path="/journey-en" element={<JourneyEnPage />} />
         <Route path="/scenario-en" element={<ScenarioEnPage />} />
+        <Route path="/word-quiz" element={<WordQuizPage />} />
+        <Route path="/grammar" element={<GrammarPage />} />
+        <Route path="/writing" element={<WritingPage />} />
+        <Route path="/quick-learn" element={<QuickLearnPage />} />
+        <Route path="/mistakes" element={<MistakesPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
 
         {/* 404 리다이렉트 */}
         <Route path="*" element={<Navigate to="/" replace />} />

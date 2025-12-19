@@ -17,11 +17,27 @@ import {
   BookOpen,
   Award,
   TrendingUp,
+  Shield,
+  Gift,
+  Gem,
+  Snowflake,
+  PenTool,
+  Timer,
+  AlertCircle,
 } from 'lucide-react';
 import { useLearningStore, useFamilyStore, TRACKS, useLanguageStore, useAuthStore } from '@/stores';
-import { useChatHistoryStore } from '@/stores/chatHistoryStore';
+import { useChatHistoryStore, type LeagueTier } from '@/stores/chatHistoryStore';
 import { Avatar } from '@/components/common';
 import { LANGUAGES, type LearningLanguage } from '@/types';
+
+// 리그 티어 정보
+const LEAGUE_INFO: Record<LeagueTier, { name: string; icon: string; color: string }> = {
+  bronze: { name: '브론즈', icon: '🥉', color: 'from-orange-500 to-orange-700' },
+  silver: { name: '실버', icon: '🥈', color: 'from-gray-400 to-gray-600' },
+  gold: { name: '골드', icon: '🥇', color: 'from-yellow-500 to-amber-600' },
+  platinum: { name: '플래티넘', icon: '💎', color: 'from-cyan-400 to-teal-600' },
+  diamond: { name: '다이아몬드', icon: '👑', color: 'from-purple-500 to-indigo-700' },
+};
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -29,7 +45,7 @@ export default function HomePage() {
   const { members, currentMemberId, setCurrentMember } = useFamilyStore();
   const { currentLanguage, setLanguage } = useLanguageStore();
   const { user } = useAuthStore();
-  const { gamification, getRecentSessions, currentLevel } = useChatHistoryStore();
+  const { gamification, getRecentSessions, currentLevel, initDailyQuests, claimQuestReward } = useChatHistoryStore();
   const [showFamilySelector, setShowFamilySelector] = useState(false);
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
 
@@ -54,6 +70,14 @@ export default function HomePage() {
       }
     }
   }, [currentMember, currentTrack?.id, setCurrentTrack]);
+
+  // 일일 퀘스트 초기화
+  useEffect(() => {
+    initDailyQuests();
+  }, [initDailyQuests]);
+
+  // 리그 정보
+  const leagueInfo = LEAGUE_INFO[gamification.league.tier];
 
   // 현재 가족 구성원 데이터 사용
   const displayName = user?.name || currentMember?.name || '학습자';
@@ -192,28 +216,60 @@ export default function HomePage() {
         </header>
 
         {/* 상태 카드 */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-4 gap-2 mb-6">
           {/* 스트릭 */}
           <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-3 text-white">
-            <Flame className="w-5 h-5 mb-1 opacity-80" />
-            <p className="text-2xl font-bold">{streakDays}</p>
-            <p className="text-xs opacity-80">연속 학습</p>
+            <Flame className="w-4 h-4 mb-1 opacity-80" />
+            <p className="text-xl font-bold">{streakDays}</p>
+            <p className="text-[10px] opacity-80">연속</p>
           </div>
 
           {/* XP & 레벨 */}
           <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-3 text-white">
-            <Zap className="w-5 h-5 mb-1 opacity-80" />
-            <p className="text-2xl font-bold">Lv.{gamification.level}</p>
-            <p className="text-xs opacity-80">{gamification.xp} XP</p>
+            <Zap className="w-4 h-4 mb-1 opacity-80" />
+            <p className="text-xl font-bold">Lv.{gamification.level}</p>
+            <p className="text-[10px] opacity-80">{gamification.xp} XP</p>
           </div>
 
-          {/* 현재 레벨 */}
-          <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-3 text-white">
-            <Award className="w-5 h-5 mb-1 opacity-80" />
-            <p className="text-2xl font-bold">{currentLangLevel || '?'}</p>
-            <p className="text-xs opacity-80">{currentLangInfo?.name} 레벨</p>
+          {/* 젬 */}
+          <div className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl p-3 text-white">
+            <Gem className="w-4 h-4 mb-1 opacity-80" />
+            <p className="text-xl font-bold">{gamification.gems}</p>
+            <p className="text-[10px] opacity-80">젬</p>
+          </div>
+
+          {/* 프리즈 */}
+          <div className="bg-gradient-to-br from-blue-400 to-indigo-500 rounded-2xl p-3 text-white">
+            <Snowflake className="w-4 h-4 mb-1 opacity-80" />
+            <p className="text-xl font-bold">{gamification.streak.freezeCount}</p>
+            <p className="text-[10px] opacity-80">프리즈</p>
           </div>
         </div>
+
+        {/* 리그 카드 */}
+        <motion.button
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          onClick={() => navigate('/leaderboard')}
+          className={`w-full bg-gradient-to-r ${leagueInfo.color} rounded-2xl p-4 text-white mb-6 text-left relative overflow-hidden`}
+        >
+          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-3xl">{leagueInfo.icon}</div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-lg">{leagueInfo.name} 리그</span>
+                  <Shield className="w-4 h-4 opacity-60" />
+                </div>
+                <p className="text-sm opacity-80">
+                  {gamification.league.rank}위 · 이번 주 {gamification.league.weeklyXp} XP
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 opacity-60" />
+          </div>
+        </motion.button>
 
         {/* 메인 AI 기능 - 아바타 채팅 */}
         <motion.button
@@ -341,13 +397,189 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* 단어 & 문법 & 작문 학습 카드 */}
+        <div className="grid grid-cols-3 gap-2 mb-6">
+          {/* 단어 퀴즈 */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/word-quiz')}
+            className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl p-3 text-white text-left relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full blur-xl" />
+            <div className="relative">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-2">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <span className="font-bold text-sm">단어</span>
+              <p className="text-[10px] opacity-80 mt-0.5">4지선다 퀴즈</p>
+            </div>
+          </motion.button>
+
+          {/* 문법 학습 */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/grammar')}
+            className="bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl p-3 text-white text-left relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full blur-xl" />
+            <div className="relative">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-2">
+                <Award className="w-5 h-5" />
+              </div>
+              <span className="font-bold text-sm">문법</span>
+              <p className="text-[10px] opacity-80 mt-0.5">핵심 문법</p>
+            </div>
+          </motion.button>
+
+          {/* 영작 연습 */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/writing')}
+            className="bg-gradient-to-br from-cyan-600 to-teal-600 rounded-2xl p-3 text-white text-left relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full blur-xl" />
+            <div className="relative">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-2">
+                <PenTool className="w-5 h-5" />
+              </div>
+              <span className="font-bold text-sm">영작</span>
+              <p className="text-[10px] opacity-80 mt-0.5">AI 첨삭</p>
+            </div>
+          </motion.button>
+        </div>
+
+        {/* 5분 학습 & 실수 복습 */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          {/* 오늘의 5분 */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/quick-learn')}
+            className="bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl p-4 text-white text-left relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-2">
+                <Timer className="w-6 h-6" />
+                <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">5분</span>
+              </div>
+              <span className="font-bold text-lg">오늘의 5분</span>
+              <p className="text-xs opacity-80 mt-1">단어 5개 + 문장 3개 + 대화</p>
+            </div>
+          </motion.button>
+
+          {/* 실수에서 배우기 */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/mistakes')}
+            className="bg-gradient-to-br from-red-500 to-orange-600 rounded-2xl p-4 text-white text-left relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="w-6 h-6" />
+                <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">복습</span>
+              </div>
+              <span className="font-bold text-lg">실수 노트</span>
+              <p className="text-xs opacity-80 mt-1">틀린 표현 모아서 복습</p>
+            </div>
+          </motion.button>
+        </div>
+
+        {/* 일일 퀘스트 */}
+        {gamification.dailyQuests.length > 0 && (
+          <section className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-primary-500" />
+                <h3 className="text-lg font-bold text-foreground">오늘의 퀘스트</h3>
+              </div>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                {gamification.dailyQuests.filter(q => q.completed).length}/{gamification.dailyQuests.length} 완료
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {gamification.dailyQuests.map((quest) => (
+                <motion.div
+                  key={quest.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`bg-white rounded-xl p-3 shadow-sm border ${
+                    quest.completed ? 'border-green-200 bg-green-50' : 'border-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      quest.type === 'chat' ? 'bg-purple-100' :
+                      quest.type === 'words' ? 'bg-blue-100' :
+                      quest.type === 'grammar' ? 'bg-amber-100' :
+                      'bg-green-100'
+                    }`}>
+                      {quest.type === 'chat' ? (
+                        <MessageCircle className={`w-5 h-5 ${quest.completed ? 'text-green-500' : 'text-purple-600'}`} />
+                      ) : quest.type === 'words' ? (
+                        <BookOpen className={`w-5 h-5 ${quest.completed ? 'text-green-500' : 'text-blue-600'}`} />
+                      ) : quest.type === 'grammar' ? (
+                        <Award className={`w-5 h-5 ${quest.completed ? 'text-green-500' : 'text-amber-600'}`} />
+                      ) : (
+                        <Flame className={`w-5 h-5 ${quest.completed ? 'text-green-500' : 'text-green-600'}`} />
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-medium ${quest.completed ? 'text-green-700' : 'text-foreground'}`}>
+                        {quest.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {/* 프로그레스 바 */}
+                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              quest.completed ? 'bg-green-500' : 'bg-primary-500'
+                            }`}
+                            style={{ width: `${Math.min((quest.progress / quest.target) * 100, 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {quest.progress}/{quest.target}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 보상 또는 완료 버튼 */}
+                    {quest.completed ? (
+                      <button
+                        onClick={() => claimQuestReward(quest.id)}
+                        className="flex items-center gap-1 bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-green-600 transition-colors"
+                      >
+                        <Gift className="w-3 h-3" />
+                        받기
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-1 text-primary-600 text-xs font-medium">
+                        <Zap className="w-3 h-3" />
+                        +{quest.xpReward}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* 오늘의 목표 */}
         <section className="mb-6">
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-primary-500" />
-                <h4 className="font-bold text-foreground">오늘의 목표</h4>
+                <Zap className="w-5 h-5 text-primary-500" />
+                <h4 className="font-bold text-foreground">일일 XP 목표</h4>
               </div>
               <span className="text-sm text-gray-500">{gamification.dailyXp}/{gamification.dailyGoalXp} XP</span>
             </div>

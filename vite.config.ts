@@ -70,12 +70,10 @@ export default defineConfig({
       '/api/anthropic': {
         target: 'https://api.anthropic.com',
         changeOrigin: true,
+        secure: true,
         rewrite: (path) => path.replace(/^\/api\/anthropic/, ''),
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            // Anthropic API 헤더 설정
-            proxyReq.setHeader('anthropic-version', '2023-06-01');
-          });
+        headers: {
+          'anthropic-version': '2023-06-01'
         }
       }
     }

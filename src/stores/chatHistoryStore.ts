@@ -36,6 +36,42 @@ export interface LevelTestResult {
   testedAt: string;
 }
 
+// 리그 타입
+export type LeagueTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+
+// 리그 데이터
+export interface LeagueData {
+  tier: LeagueTier;
+  weeklyXp: number;
+  weekStart: string;
+  rank: number; // 현재 리그 내 순위
+  promoted: boolean; // 이번 주 승급 여부
+  relegated: boolean; // 이번 주 강등 여부
+}
+
+// 리더보드 유저
+export interface LeaderboardUser {
+  id: string;
+  name: string;
+  avatar: string;
+  weeklyXp: number;
+  tier: LeagueTier;
+  rank: number;
+  isCurrentUser?: boolean;
+}
+
+// 일일 퀘스트
+export interface DailyQuest {
+  id: string;
+  title: string;
+  description: string;
+  target: number;
+  progress: number;
+  xpReward: number;
+  completed: boolean;
+  type: 'chat' | 'words' | 'grammar' | 'streak';
+}
+
 // 게이미피케이션 데이터
 export interface GamificationData {
   xp: number;
@@ -44,6 +80,7 @@ export interface GamificationData {
     current: number;
     longest: number;
     lastActiveDate: string | null;
+    freezeCount: number; // 스트릭 프리즈 보유 개수
   };
   badges: {
     id: string;
@@ -58,6 +95,9 @@ export interface GamificationData {
     daysActive: number;
     sessionsCompleted: number;
   };
+  league: LeagueData;
+  dailyQuests: DailyQuest[];
+  gems: number; // 보석 (프리미엄 화폐)
 }
 
 interface ChatHistoryState {
@@ -87,6 +127,19 @@ interface ChatHistoryState {
   checkAndUpdateStreak: () => void;
   earnBadge: (badgeId: string, badgeName: string) => void;
   resetDailyXp: () => void;
+
+  // 리그 액션
+  updateLeagueWeeklyXp: () => void;
+  getLeaderboard: () => LeaderboardUser[];
+  checkLeaguePromotion: () => void;
+  useStreakFreeze: () => boolean;
+  addGems: (amount: number) => void;
+  buyStreakFreeze: () => boolean;
+
+  // 일일 퀘스트 액션
+  initDailyQuests: () => void;
+  updateQuestProgress: (type: DailyQuest['type'], amount: number) => void;
+  claimQuestReward: (questId: string) => void;
 }
 
 // 배지 정의
@@ -145,6 +198,7 @@ export const useChatHistoryStore = create<ChatHistoryState>()(
           current: 0,
           longest: 0,
           lastActiveDate: null,
+          freezeCount: 0,
         },
         badges: [],
         dailyXp: 0,
@@ -155,6 +209,16 @@ export const useChatHistoryStore = create<ChatHistoryState>()(
           daysActive: 0,
           sessionsCompleted: 0,
         },
+        league: {
+          tier: 'bronze' as LeagueTier,
+          weeklyXp: 0,
+          weekStart: getWeekStart(),
+          rank: 50,
+          promoted: false,
+          relegated: false,
+        },
+        dailyQuests: [],
+        gems: 0,
       },
 
       // 대화 세션 저장
@@ -329,6 +393,7 @@ export const useChatHistoryStore = create<ChatHistoryState>()(
             gamification: {
               ...state.gamification,
               streak: {
+                ...state.gamification.streak,
                 current: newStreak,
                 longest: newLongest,
                 lastActiveDate: today,
@@ -377,6 +442,253 @@ export const useChatHistoryStore = create<ChatHistoryState>()(
           gamification: {
             ...state.gamification,
             dailyXp: 0,
+          },
+        }));
+      },
+
+      // 리그 주간 XP 업데이트
+      updateLeagueWeeklyXp: () => {
+        const currentWeekStart = getWeekStart();
+        set((state) => {
+          const league = state.gamification.league;
+
+          // 새로운 주 시작인지 확인
+          if (league.weekStart !== currentWeekStart) {
+            // 이전 주 결과 기반으로 승급/강등 처리
+            const { checkLeaguePromotion } = get();
+            checkLeaguePromotion();
+
+            return {
+              gamification: {
+                ...state.gamification,
+                league: {
+                  ...league,
+                  weeklyXp: state.gamification.dailyXp,
+                  weekStart: currentWeekStart,
+                  promoted: false,
+                  relegated: false,
+                },
+              },
+            };
+          }
+
+          return {
+            gamification: {
+              ...state.gamification,
+              league: {
+                ...league,
+                weeklyXp: league.weeklyXp + state.gamification.dailyXp,
+              },
+            },
+          };
+        });
+      },
+
+      // 리더보드 가져오기 (가상 유저 포함)
+      getLeaderboard: () => {
+        const { gamification } = get();
+        const currentUser: LeaderboardUser = {
+          id: 'current-user',
+          name: '나',
+          avatar: '👤',
+          weeklyXp: gamification.league.weeklyXp,
+          tier: gamification.league.tier,
+          rank: gamification.league.rank,
+          isCurrentUser: true,
+        };
+
+        // 가상 유저 생성 (실제로는 서버에서 가져옴)
+        const virtualUsers: LeaderboardUser[] = [
+          { id: '1', name: '영어마스터', avatar: '🦁', weeklyXp: 850, tier: gamification.league.tier, rank: 1 },
+          { id: '2', name: 'StudyHard', avatar: '🐯', weeklyXp: 720, tier: gamification.league.tier, rank: 2 },
+          { id: '3', name: '열공러', avatar: '🐻', weeklyXp: 680, tier: gamification.league.tier, rank: 3 },
+          { id: '4', name: 'English왕', avatar: '🐼', weeklyXp: 550, tier: gamification.league.tier, rank: 4 },
+          { id: '5', name: '매일영어', avatar: '🐨', weeklyXp: 480, tier: gamification.league.tier, rank: 5 },
+          { id: '6', name: '스픽플로우', avatar: '🦊', weeklyXp: 420, tier: gamification.league.tier, rank: 6 },
+          { id: '7', name: '영어정복', avatar: '🐰', weeklyXp: 350, tier: gamification.league.tier, rank: 7 },
+          { id: '8', name: '초보탈출', avatar: '🐸', weeklyXp: 280, tier: gamification.league.tier, rank: 8 },
+          { id: '9', name: '화이팅', avatar: '🐵', weeklyXp: 200, tier: gamification.league.tier, rank: 9 },
+          { id: '10', name: '시작이반', avatar: '🐶', weeklyXp: 150, tier: gamification.league.tier, rank: 10 },
+        ];
+
+        // 현재 유저 순위 계산
+        const allUsers = [...virtualUsers, currentUser].sort((a, b) => b.weeklyXp - a.weeklyXp);
+        allUsers.forEach((user, index) => {
+          user.rank = index + 1;
+        });
+
+        return allUsers;
+      },
+
+      // 리그 승급/강등 체크
+      checkLeaguePromotion: () => {
+        set((state) => {
+          const { league } = state.gamification;
+          const tiers: LeagueTier[] = ['bronze', 'silver', 'gold', 'platinum', 'diamond'];
+          const currentTierIndex = tiers.indexOf(league.tier);
+
+          let newTier = league.tier;
+          let promoted = false;
+          let relegated = false;
+
+          // 상위 10% (순위 1-5) 승급
+          if (league.rank <= 5 && currentTierIndex < tiers.length - 1) {
+            newTier = tiers[currentTierIndex + 1];
+            promoted = true;
+          }
+          // 하위 10% (순위 46-50) 강등
+          else if (league.rank >= 46 && currentTierIndex > 0) {
+            newTier = tiers[currentTierIndex - 1];
+            relegated = true;
+          }
+
+          return {
+            gamification: {
+              ...state.gamification,
+              league: {
+                ...league,
+                tier: newTier,
+                promoted,
+                relegated,
+                rank: promoted ? 25 : relegated ? 25 : league.rank, // 새 리그 중간에서 시작
+              },
+            },
+          };
+        });
+      },
+
+      // 스트릭 프리즈 사용
+      useStreakFreeze: () => {
+        const { gamification } = get();
+        if (gamification.streak.freezeCount <= 0) return false;
+
+        set((state) => ({
+          gamification: {
+            ...state.gamification,
+            streak: {
+              ...state.gamification.streak,
+              freezeCount: state.gamification.streak.freezeCount - 1,
+              lastActiveDate: getTodayString(), // 오늘 활동한 것으로 처리
+            },
+          },
+        }));
+        return true;
+      },
+
+      // 젬 추가
+      addGems: (amount) => {
+        set((state) => ({
+          gamification: {
+            ...state.gamification,
+            gems: state.gamification.gems + amount,
+          },
+        }));
+      },
+
+      // 스트릭 프리즈 구매 (50젬)
+      buyStreakFreeze: () => {
+        const { gamification } = get();
+        if (gamification.gems < 50) return false;
+
+        set((state) => ({
+          gamification: {
+            ...state.gamification,
+            gems: state.gamification.gems - 50,
+            streak: {
+              ...state.gamification.streak,
+              freezeCount: state.gamification.streak.freezeCount + 1,
+            },
+          },
+        }));
+        return true;
+      },
+
+      // 일일 퀘스트 초기화
+      initDailyQuests: () => {
+        const today = getTodayString();
+        const { gamification } = get();
+
+        // 이미 오늘 퀘스트가 있으면 스킵
+        if (gamification.dailyQuests.length > 0 &&
+            gamification.dailyQuests[0].id.startsWith(today)) {
+          return;
+        }
+
+        const newQuests: DailyQuest[] = [
+          {
+            id: `${today}-chat`,
+            title: 'AI와 대화하기',
+            description: 'AI 튜터와 1회 대화를 완료하세요',
+            target: 1,
+            progress: 0,
+            xpReward: 20,
+            completed: false,
+            type: 'chat',
+          },
+          {
+            id: `${today}-words`,
+            title: '단어 학습',
+            description: '단어 10개를 학습하세요',
+            target: 10,
+            progress: 0,
+            xpReward: 15,
+            completed: false,
+            type: 'words',
+          },
+          {
+            id: `${today}-streak`,
+            title: '오늘의 목표 달성',
+            description: '일일 XP 목표를 달성하세요',
+            target: 50,
+            progress: 0,
+            xpReward: 25,
+            completed: false,
+            type: 'streak',
+          },
+        ];
+
+        set((state) => ({
+          gamification: {
+            ...state.gamification,
+            dailyQuests: newQuests,
+          },
+        }));
+      },
+
+      // 퀘스트 진행도 업데이트
+      updateQuestProgress: (type, amount) => {
+        set((state) => ({
+          gamification: {
+            ...state.gamification,
+            dailyQuests: state.gamification.dailyQuests.map((quest) => {
+              if (quest.type === type && !quest.completed) {
+                const newProgress = Math.min(quest.progress + amount, quest.target);
+                return {
+                  ...quest,
+                  progress: newProgress,
+                  completed: newProgress >= quest.target,
+                };
+              }
+              return quest;
+            }),
+          },
+        }));
+      },
+
+      // 퀘스트 보상 수령
+      claimQuestReward: (questId) => {
+        const { gamification, addXp, addGems } = get();
+        const quest = gamification.dailyQuests.find((q) => q.id === questId);
+
+        if (!quest || !quest.completed) return;
+
+        addXp(quest.xpReward, `퀘스트 완료: ${quest.title}`);
+        addGems(5); // 퀘스트 완료 시 젬 5개 보너스
+
+        set((state) => ({
+          gamification: {
+            ...state.gamification,
+            dailyQuests: state.gamification.dailyQuests.filter((q) => q.id !== questId),
           },
         }));
       },

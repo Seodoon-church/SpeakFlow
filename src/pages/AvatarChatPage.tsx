@@ -40,7 +40,7 @@ import {
   ArrowUp,
   AlertCircle,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useChatHistoryStore } from '@/stores/chatHistoryStore';
 
 // 대화 모드 타입
@@ -131,8 +131,10 @@ const backgrounds = [
 
 export default function AvatarChatPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialMode = (searchParams.get('mode') as ChatMode) || 'free-talk';
   const { saveSession, checkAndUpdateStreak } = useChatHistoryStore();
-  const [chatMode, setChatMode] = useState<ChatMode>('free-talk');
+  const [chatMode, setChatMode] = useState<ChatMode>(initialMode);
   const sessionStartTime = useRef<Date>(new Date());
   const [isRecording, setIsRecording] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -164,6 +166,7 @@ export default function AvatarChatPage() {
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
   const [selectedPresenter, setSelectedPresenter] = useState<Presenter>(defaultPresenters[0]);
   const [mouthOpen, setMouthOpen] = useState(false);
+  const [showChatPanel, setShowChatPanel] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -176,6 +179,13 @@ export default function AvatarChatPage() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  // 초기 모드에 따라 모달 자동 표시
+  useEffect(() => {
+    if (hasAvatar && initialMode === 'simulation') {
+      setShowSimulation(true);
+    }
+  }, [hasAvatar, initialMode]);
 
   // 메시지 스크롤
   useEffect(() => {
@@ -623,9 +633,9 @@ export default function AvatarChatPage() {
   const currentBackground = backgrounds.find(bg => bg.id === avatarSettings.backgroundImage);
 
   return (
-    <div className="min-h-screen bg-gray-900 flex">
-      {/* 왼쪽: 아바타 영역 */}
-      <div className="flex-1 relative">
+    <div className="min-h-screen bg-gray-900 flex flex-col lg:flex-row">
+      {/* 아바타 영역 */}
+      <div className="flex-1 relative min-h-screen lg:min-h-0">
         {/* 배경 */}
         <div className={`absolute inset-0 bg-gradient-to-br ${currentBackground?.color || 'from-slate-700 to-slate-900'}`}>
           <div className="absolute inset-0 opacity-10">
@@ -993,8 +1003,9 @@ export default function AvatarChatPage() {
           </motion.div>
         )}
 
-        {/* 모드 선택 버튼들 */}
-        <div className="absolute bottom-32 left-4 flex flex-col gap-2">
+        {/* 모드 선택 버튼들 - 아바타 선택 후에만 표시 */}
+        {hasAvatar && (
+        <div className="absolute bottom-32 left-4 flex flex-col gap-2 z-10">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -1037,13 +1048,40 @@ export default function AvatarChatPage() {
             상황 시뮬레이션
           </motion.button>
         </div>
+        )}
       </div>
 
-      {/* 오른쪽: 채팅 패널 */}
-      <div className="w-96 bg-gray-800 border-l border-gray-700 flex flex-col">
+      {/* 채팅 패널 토글 버튼 (모바일) */}
+      <button
+        onClick={() => setShowChatPanel(!showChatPanel)}
+        className="lg:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-cyan-500 rounded-full flex items-center justify-center shadow-lg"
+      >
+        <MessageSquare className="w-6 h-6 text-white" />
+        {messages.length > 0 && (
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+            {messages.length}
+          </span>
+        )}
+      </button>
+
+      {/* 채팅 패널 */}
+      <div className={`
+        fixed inset-0 z-50 lg:relative lg:inset-auto
+        lg:w-96 bg-gray-800 border-l border-gray-700 flex flex-col
+        transition-transform duration-300
+        ${showChatPanel ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+      `}>
         <div className="p-4 border-b border-gray-700">
           <div className="flex items-center justify-between">
-            <h3 className="text-white font-semibold">대화 기록</h3>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowChatPanel(false)}
+                className="lg:hidden text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <h3 className="text-white font-semibold">대화 기록</h3>
+            </div>
             <button
               onClick={() => setShowSubtitles(!showSubtitles)}
               className={`text-sm px-3 py-1 rounded-full transition-colors ${

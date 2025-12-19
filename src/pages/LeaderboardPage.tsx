@@ -1,38 +1,90 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Trophy,
   Crown,
   Flame,
   ChevronLeft,
   Zap,
-  Star,
   TrendingUp,
+  TrendingDown,
+  Shield,
+  Users,
+  Gem,
+  Snowflake,
+  ChevronRight,
 } from 'lucide-react';
 import { useFamilyStore, useGamificationStore, TRACKS } from '@/stores';
+import { useChatHistoryStore, type LeagueTier, type LeaderboardUser } from '@/stores/chatHistoryStore';
 import { Avatar } from '@/components/common';
 
-type RankingTab = 'total' | 'weekly';
+type LeaderboardTab = 'league' | 'family';
+
+// 리그 티어 정보
+const LEAGUE_INFO: Record<LeagueTier, { name: string; icon: string; color: string; bgGradient: string; textColor: string }> = {
+  bronze: {
+    name: '브론즈',
+    icon: '🥉',
+    color: 'from-orange-600 to-orange-800',
+    bgGradient: 'from-orange-100 to-orange-200',
+    textColor: 'text-orange-700',
+  },
+  silver: {
+    name: '실버',
+    icon: '🥈',
+    color: 'from-gray-400 to-gray-600',
+    bgGradient: 'from-gray-100 to-gray-200',
+    textColor: 'text-gray-600',
+  },
+  gold: {
+    name: '골드',
+    icon: '🥇',
+    color: 'from-yellow-500 to-amber-600',
+    bgGradient: 'from-yellow-100 to-amber-200',
+    textColor: 'text-amber-700',
+  },
+  platinum: {
+    name: '플래티넘',
+    icon: '💎',
+    color: 'from-cyan-400 to-teal-600',
+    bgGradient: 'from-cyan-100 to-teal-200',
+    textColor: 'text-teal-700',
+  },
+  diamond: {
+    name: '다이아몬드',
+    icon: '👑',
+    color: 'from-purple-500 to-indigo-700',
+    bgGradient: 'from-purple-100 to-indigo-200',
+    textColor: 'text-indigo-700',
+  },
+};
 
 export default function LeaderboardPage() {
   const navigate = useNavigate();
   const { members, currentMemberId } = useFamilyStore();
   const { memberData, initMemberData } = useGamificationStore();
-  const [activeTab, setActiveTab] = useState<RankingTab>('total');
+  const { gamification, getLeaderboard, initDailyQuests } = useChatHistoryStore();
+  const [activeTab, setActiveTab] = useState<LeaderboardTab>('league');
 
-  // 모든 멤버의 게이미피케이션 데이터 초기화
+  // 초기화
   useEffect(() => {
     members.forEach((member) => {
       initMemberData(member.id);
     });
-  }, [members, initMemberData]);
+    initDailyQuests();
+  }, [members, initMemberData, initDailyQuests]);
 
-  // 랭킹 데이터 생성
-  const getRankingData = () => {
+  // 리그 리더보드 데이터
+  const leagueLeaderboard = getLeaderboard();
+  const currentUserLeague = leagueLeaderboard.find(u => u.isCurrentUser);
+  const leagueInfo = LEAGUE_INFO[gamification.league.tier];
+
+  // 가족 랭킹 데이터
+  const getFamilyRankingData = () => {
     return members
       .map((member) => {
-        const gamification = memberData[member.id] || {
+        const gData = memberData[member.id] || {
           xp: 0,
           level: 1,
           streak: { current: 0, longest: 0, lastStudyDate: null },
@@ -41,67 +93,31 @@ export default function LeaderboardPage() {
           todayXp: 0,
           dailyGoalXp: 50,
         };
-
         return {
           ...member,
-          xp: gamification.xp,
-          level: gamification.level,
-          weeklyXp: gamification.weeklyProgress.xpEarned,
-          streak: gamification.streak.current,
-          badges: gamification.badges.length,
+          xp: gData.xp,
+          level: gData.level,
+          weeklyXp: gData.weeklyProgress.xpEarned,
+          streak: gData.streak.current,
+          badges: gData.badges.length,
         };
       })
-      .sort((a, b) => {
-        if (activeTab === 'weekly') {
-          return b.weeklyXp - a.weeklyXp;
-        }
-        return b.xp - a.xp;
-      });
+      .sort((a, b) => b.weeklyXp - a.weeklyXp);
   };
 
-  const rankingData = getRankingData();
-  const top3 = rankingData.slice(0, 3);
-  const rest = rankingData.slice(3);
+  const familyRankingData = getFamilyRankingData();
 
-  // 현재 사용자 랭킹 찾기
-  const currentUserRank = rankingData.findIndex((m) => m.id === currentMemberId) + 1;
-  const currentUserData = rankingData.find((m) => m.id === currentMemberId);
-
-  // 포디움 순서: 2등, 1등, 3등
-  const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
-
-  // 메달 색상
-  const getMedalColor = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return 'from-yellow-400 to-amber-500';
-      case 2:
-        return 'from-gray-300 to-gray-400';
-      case 3:
-        return 'from-orange-400 to-orange-500';
-      default:
-        return 'from-gray-200 to-gray-300';
-    }
-  };
-
-  // 포디움 높이
-  const getPodiumHeight = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return 'h-28';
-      case 2:
-        return 'h-20';
-      case 3:
-        return 'h-14';
-      default:
-        return 'h-10';
-    }
+  // 주 남은 일수 계산
+  const getDaysLeftInWeek = () => {
+    const now = new Date();
+    const day = now.getDay();
+    return day === 0 ? 0 : 7 - day;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-accent-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* 헤더 */}
-      <header className="bg-gradient-to-r from-primary-500 to-primary-600 text-white">
+      <header className={`bg-gradient-to-r ${leagueInfo.color} text-white`}>
         <div className="px-4 py-4">
           <div className="flex items-center gap-3 mb-4">
             <button
@@ -110,288 +126,389 @@ export default function LeaderboardPage() {
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <div>
+            <div className="flex-1">
               <h1 className="text-lg font-bold flex items-center gap-2">
                 <Trophy className="w-5 h-5" />
-                가족 리더보드
+                리더보드
               </h1>
-              <p className="text-primary-100 text-xs">
-                함께 성장하는 우리 가족
+              <p className="text-white/80 text-xs">
+                {activeTab === 'league' ? `${leagueInfo.name} 리그` : '가족 랭킹'}
               </p>
+            </div>
+
+            {/* 젬 & 프리즈 */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-white/20 px-2.5 py-1.5 rounded-full">
+                <Gem className="w-4 h-4 text-cyan-300" />
+                <span className="text-sm font-bold">{gamification.gems}</span>
+              </div>
+              <div className="flex items-center gap-1 bg-white/20 px-2.5 py-1.5 rounded-full">
+                <Snowflake className="w-4 h-4 text-blue-200" />
+                <span className="text-sm font-bold">{gamification.streak.freezeCount}</span>
+              </div>
             </div>
           </div>
 
-          {/* 내 순위 카드 */}
-          {currentUserData && (
-            <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Avatar
-                    avatar={currentUserData.avatar}
-                    avatarUrl={currentUserData.avatarUrl}
-                    size="lg"
-                    className="ring-2 ring-white/50"
-                  />
-                  <div className="absolute -bottom-1 -right-1 bg-white text-primary-600 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow">
-                    {currentUserRank}
-                  </div>
-                </div>
+          {/* 리그 정보 카드 */}
+          {activeTab === 'league' && (
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 mb-4">
+              <div className="flex items-center gap-4">
+                <div className="text-4xl">{leagueInfo.icon}</div>
                 <div className="flex-1">
-                  <p className="font-bold">{currentUserData.name}</p>
-                  <p className="text-primary-100 text-sm">
-                    Lv.{currentUserData.level} · {activeTab === 'weekly' ? currentUserData.weeklyXp : currentUserData.xp} XP
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-bold">{leagueInfo.name} 리그</span>
+                    {gamification.league.promoted && (
+                      <span className="text-xs bg-green-400/30 text-green-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" /> 승급!
+                      </span>
+                    )}
+                    {gamification.league.relegated && (
+                      <span className="text-xs bg-red-400/30 text-red-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <TrendingDown className="w-3 h-3" /> 강등
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-white/70 text-sm">
+                    현재 {currentUserLeague?.rank || gamification.league.rank}위 · {gamification.league.weeklyXp} XP
                   </p>
                 </div>
                 <div className="text-right">
-                  <div className="flex items-center gap-1 text-yellow-300">
-                    <Flame className="w-4 h-4" />
-                    <span className="font-bold">{currentUserData.streak}</span>
-                  </div>
-                  <p className="text-primary-200 text-xs">연속 학습</p>
+                  <p className="text-2xl font-bold">{getDaysLeftInWeek()}</p>
+                  <p className="text-xs text-white/70">일 남음</p>
+                </div>
+              </div>
+
+              {/* 승급/강등 안내 */}
+              <div className="mt-3 pt-3 border-t border-white/20 grid grid-cols-2 gap-2 text-xs">
+                <div className="flex items-center gap-2 text-green-200">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>상위 10% (1~5위) 승급</span>
+                </div>
+                <div className="flex items-center gap-2 text-red-200">
+                  <TrendingDown className="w-3 h-3" />
+                  <span>하위 10% (46~50위) 강등</span>
                 </div>
               </div>
             </div>
           )}
-        </div>
 
-        {/* 탭 */}
-        <div className="flex px-4 gap-2 pb-4">
-          <button
-            onClick={() => setActiveTab('total')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'total'
-                ? 'bg-white text-primary-600'
-                : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
-          >
-            전체 랭킹
-          </button>
-          <button
-            onClick={() => setActiveTab('weekly')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'weekly'
-                ? 'bg-white text-primary-600'
-                : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
-          >
-            이번 주
-          </button>
+          {/* 탭 */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setActiveTab('league')}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                activeTab === 'league'
+                  ? 'bg-white text-gray-800'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              리그 랭킹
+            </button>
+            <button
+              onClick={() => setActiveTab('family')}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                activeTab === 'family'
+                  ? 'bg-white text-gray-800'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              가족 랭킹
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* 포디움 (Top 3) */}
-      {top3.length > 0 && (
-        <div className="px-4 py-6">
-          <div className="flex items-end justify-center gap-3">
-            {podiumOrder.map((member, index) => {
-              if (!member) return null;
-              const actualRank = top3.indexOf(member) + 1;
-              const xpToShow = activeTab === 'weekly' ? member.weeklyXp : member.xp;
+      {/* 리그 리더보드 */}
+      {activeTab === 'league' && (
+        <div className="px-4 py-4 pb-24">
+          {/* 승급 존 */}
+          <div className="mb-3">
+            <div className="flex items-center gap-2 text-green-600 text-xs font-medium mb-2 px-2">
+              <TrendingUp className="w-3 h-3" />
+              승급 존
+            </div>
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 overflow-hidden">
+              {leagueLeaderboard.slice(0, 5).map((user, index) => (
+                <LeagueUserRow
+                  key={user.id}
+                  user={user}
+                  rank={index + 1}
+                  zone="promotion"
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* 안전 존 */}
+          <div className="mb-3">
+            <div className="flex items-center gap-2 text-gray-500 text-xs font-medium mb-2 px-2">
+              <Shield className="w-3 h-3" />
+              안전 존
+            </div>
+            <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+              {leagueLeaderboard.slice(5, 45).map((user, index) => (
+                <LeagueUserRow
+                  key={user.id}
+                  user={user}
+                  rank={index + 6}
+                  zone="safe"
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* 강등 존 */}
+          {leagueLeaderboard.length > 45 && (
+            <div>
+              <div className="flex items-center gap-2 text-red-600 text-xs font-medium mb-2 px-2">
+                <TrendingDown className="w-3 h-3" />
+                강등 위험 존
+              </div>
+              <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-100 overflow-hidden">
+                {leagueLeaderboard.slice(45).map((user, index) => (
+                  <LeagueUserRow
+                    key={user.id}
+                    user={user}
+                    rank={index + 46}
+                    zone="relegation"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 가족 리더보드 */}
+      {activeTab === 'family' && (
+        <div className="px-4 py-4 pb-24">
+          {/* 포디움 */}
+          {familyRankingData.length >= 3 && (
+            <div className="flex items-end justify-center gap-3 mb-6">
+              {/* 2등 */}
+              <FamilyPodiumItem member={familyRankingData[1]} rank={2} />
+              {/* 1등 */}
+              <FamilyPodiumItem member={familyRankingData[0]} rank={1} />
+              {/* 3등 */}
+              <FamilyPodiumItem member={familyRankingData[2]} rank={3} />
+            </div>
+          )}
+
+          {/* 나머지 */}
+          <div className="space-y-2">
+            {familyRankingData.slice(3).map((member, index) => {
+              const rank = index + 4;
+              const isCurrentUser = member.id === currentMemberId;
+              const track = TRACKS.find((t) => t.id === member.trackId);
 
               return (
                 <motion.div
                   key={member.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`flex flex-col items-center ${actualRank === 1 ? 'order-2' : actualRank === 2 ? 'order-1' : 'order-3'}`}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={`bg-white rounded-xl p-4 shadow-sm ${
+                    isCurrentUser ? 'ring-2 ring-primary-500' : ''
+                  }`}
                 >
-                  {/* 아바타 */}
-                  <div className="relative mb-2">
-                    {actualRank === 1 && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.3, type: 'spring' }}
-                        className="absolute -top-4 left-1/2 -translate-x-1/2"
-                      >
-                        <Crown className="w-8 h-8 text-yellow-500 drop-shadow-lg" />
-                      </motion.div>
-                    )}
-                    <div
-                      className={`rounded-full p-1 ${
-                        actualRank === 1
-                          ? 'bg-gradient-to-br from-yellow-400 to-amber-500'
-                          : actualRank === 2
-                          ? 'bg-gradient-to-br from-gray-300 to-gray-400'
-                          : 'bg-gradient-to-br from-orange-400 to-orange-500'
-                      }`}
-                    >
-                      <Avatar
-                        avatar={member.avatar}
-                        avatarUrl={member.avatarUrl}
-                        size={actualRank === 1 ? 'xl' : 'lg'}
-                        className="ring-2 ring-white"
-                      />
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                      <span className="font-bold text-gray-500 text-sm">{rank}</span>
                     </div>
-                    <div
-                      className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-lg bg-gradient-to-br ${getMedalColor(actualRank)}`}
-                    >
-                      {actualRank}
+                    <Avatar
+                      avatar={member.avatar}
+                      avatarUrl={member.avatarUrl}
+                      size="md"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-foreground">{member.name}</p>
+                        {isCurrentUser && (
+                          <span className="text-xs bg-primary-100 text-primary-600 px-1.5 py-0.5 rounded">
+                            나
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <span>Lv.{member.level}</span>
+                        <span>·</span>
+                        <span className="flex items-center gap-0.5">
+                          <Flame className="w-3 h-3 text-orange-500" />
+                          {member.streak}일
+                        </span>
+                        {track && (
+                          <>
+                            <span>·</span>
+                            <span>{track.icon} {track.name}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-
-                  {/* 이름 */}
-                  <p className={`font-bold text-foreground ${actualRank === 1 ? 'text-base' : 'text-sm'}`}>
-                    {member.name}
-                  </p>
-
-                  {/* XP */}
-                  <div className="flex items-center gap-1 text-primary-600 text-sm">
-                    <Zap className="w-3 h-3" />
-                    <span className="font-semibold">{xpToShow}</span>
-                  </div>
-
-                  {/* 포디움 */}
-                  <div
-                    className={`${getPodiumHeight(actualRank)} w-20 mt-2 rounded-t-lg bg-gradient-to-br ${getMedalColor(actualRank)} flex items-center justify-center`}
-                  >
-                    <span className="text-white font-bold text-lg">{actualRank}</span>
+                    <div className="text-right">
+                      <div className="flex items-center gap-1 text-primary-600">
+                        <Zap className="w-4 h-4" />
+                        <span className="font-bold">{member.weeklyXp}</span>
+                      </div>
+                      <p className="text-xs text-gray-400">이번 주</p>
+                    </div>
                   </div>
                 </motion.div>
               );
             })}
           </div>
+
+          {familyRankingData.length === 0 && (
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+              <p className="text-gray-500 mb-2">가족 구성원이 없어요</p>
+              <button
+                onClick={() => navigate('/family')}
+                className="text-primary-600 font-medium flex items-center gap-1 mx-auto"
+              >
+                가족 추가하기 <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       )}
-
-      {/* 나머지 랭킹 */}
-      <div className="px-4 pb-24">
-        <AnimatePresence>
-          {rest.map((member, index) => {
-            const rank = index + 4;
-            const xpToShow = activeTab === 'weekly' ? member.weeklyXp : member.xp;
-            const isCurrentUser = member.id === currentMemberId;
-            const track = TRACKS.find((t) => t.id === member.trackId);
-
-            return (
-              <motion.div
-                key={member.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`bg-white rounded-xl p-4 mb-2 shadow-sm ${
-                  isCurrentUser ? 'ring-2 ring-primary-500' : ''
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  {/* 순위 */}
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                    <span className="font-bold text-gray-500 text-sm">{rank}</span>
-                  </div>
-
-                  {/* 아바타 */}
-                  <Avatar
-                    avatar={member.avatar}
-                    avatarUrl={member.avatarUrl}
-                    size="md"
-                  />
-
-                  {/* 정보 */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-foreground">{member.name}</p>
-                      {isCurrentUser && (
-                        <span className="text-xs bg-primary-100 text-primary-600 px-1.5 py-0.5 rounded">
-                          나
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span>Lv.{member.level}</span>
-                      <span>·</span>
-                      <span className="flex items-center gap-0.5">
-                        <Flame className="w-3 h-3 text-orange-500" />
-                        {member.streak}일
-                      </span>
-                      {track && (
-                        <>
-                          <span>·</span>
-                          <span>{track.icon} {track.name}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* XP */}
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 text-primary-600">
-                      <Zap className="w-4 h-4" />
-                      <span className="font-bold">{xpToShow}</span>
-                    </div>
-                    <p className="text-xs text-gray-400">XP</p>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-
-        {/* 빈 상태 */}
-        {rankingData.length === 0 && (
-          <div className="text-center py-12">
-            <Trophy className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-            <p className="text-gray-500 mb-2">아직 랭킹 데이터가 없어요</p>
-            <p className="text-gray-400 text-sm">학습을 시작하면 랭킹이 표시됩니다</p>
-          </div>
-        )}
-
-        {/* 동기부여 메시지 */}
-        {currentUserRank > 1 && currentUserData && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mt-4 bg-gradient-to-r from-accent-50 to-primary-50 rounded-xl p-4 border border-accent-100"
-          >
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-accent-100 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-accent-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-foreground text-sm">
-                  {rankingData[currentUserRank - 2]?.name}님까지{' '}
-                  <span className="text-primary-600">
-                    {(activeTab === 'weekly'
-                      ? rankingData[currentUserRank - 2]?.weeklyXp
-                      : rankingData[currentUserRank - 2]?.xp) -
-                      (activeTab === 'weekly' ? currentUserData.weeklyXp : currentUserData.xp)}
-                    XP
-                  </span>{' '}
-                  차이!
-                </p>
-                <p className="text-gray-500 text-xs mt-0.5">
-                  오늘 학습으로 순위를 올려보세요!
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* 1등 축하 메시지 */}
-        {currentUserRank === 1 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl p-4 border border-yellow-200"
-          >
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Star className="w-5 h-5 text-yellow-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-foreground text-sm">
-                  축하합니다! 현재 1등이에요!
-                </p>
-                <p className="text-gray-500 text-xs mt-0.5">
-                  꾸준한 학습으로 1등 자리를 지켜보세요
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </div>
     </div>
+  );
+}
+
+// 리그 유저 행 컴포넌트
+function LeagueUserRow({
+  user,
+  rank,
+  zone
+}: {
+  user: LeaderboardUser;
+  rank: number;
+  zone: 'promotion' | 'safe' | 'relegation';
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: rank * 0.02 }}
+      className={`flex items-center gap-3 p-3 border-b last:border-b-0 ${
+        user.isCurrentUser
+          ? zone === 'promotion'
+            ? 'bg-green-100'
+            : zone === 'relegation'
+            ? 'bg-red-100'
+            : 'bg-primary-50'
+          : ''
+      } ${
+        zone === 'promotion' ? 'border-green-100' :
+        zone === 'relegation' ? 'border-red-100' : 'border-gray-100'
+      }`}
+    >
+      {/* 순위 */}
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+        rank === 1 ? 'bg-yellow-400 text-white' :
+        rank === 2 ? 'bg-gray-400 text-white' :
+        rank === 3 ? 'bg-orange-400 text-white' :
+        zone === 'promotion' ? 'bg-green-200 text-green-700' :
+        zone === 'relegation' ? 'bg-red-200 text-red-700' :
+        'bg-gray-100 text-gray-600'
+      }`}>
+        {rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : rank}
+      </div>
+
+      {/* 아바타 */}
+      <div className="text-2xl">{user.avatar}</div>
+
+      {/* 정보 */}
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <p className={`font-bold ${user.isCurrentUser ? 'text-primary-600' : 'text-foreground'}`}>
+            {user.name}
+          </p>
+          {user.isCurrentUser && (
+            <span className="text-xs bg-primary-500 text-white px-1.5 py-0.5 rounded">나</span>
+          )}
+        </div>
+      </div>
+
+      {/* XP */}
+      <div className="flex items-center gap-1 text-primary-600">
+        <Zap className="w-4 h-4" />
+        <span className="font-bold">{user.weeklyXp}</span>
+        <span className="text-xs text-gray-400">XP</span>
+      </div>
+    </motion.div>
+  );
+}
+
+// 가족 포디움 아이템
+function FamilyPodiumItem({ member, rank }: { member: any; rank: number }) {
+  const getMedalColor = (r: number) => {
+    switch (r) {
+      case 1: return 'from-yellow-400 to-amber-500';
+      case 2: return 'from-gray-300 to-gray-400';
+      case 3: return 'from-orange-400 to-orange-500';
+      default: return 'from-gray-200 to-gray-300';
+    }
+  };
+
+  const getPodiumHeight = (r: number) => {
+    switch (r) {
+      case 1: return 'h-24';
+      case 2: return 'h-16';
+      case 3: return 'h-12';
+      default: return 'h-10';
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: rank === 1 ? 0.1 : rank === 2 ? 0 : 0.2 }}
+      className="flex flex-col items-center"
+    >
+      {/* 아바타 */}
+      <div className="relative mb-2">
+        {rank === 1 && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.3, type: 'spring' }}
+            className="absolute -top-4 left-1/2 -translate-x-1/2"
+          >
+            <Crown className="w-6 h-6 text-yellow-500" />
+          </motion.div>
+        )}
+        <div className={`rounded-full p-0.5 bg-gradient-to-br ${getMedalColor(rank)}`}>
+          <Avatar
+            avatar={member.avatar}
+            avatarUrl={member.avatarUrl}
+            size={rank === 1 ? 'lg' : 'md'}
+            className="ring-2 ring-white"
+          />
+        </div>
+        <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br ${getMedalColor(rank)}`}>
+          {rank}
+        </div>
+      </div>
+
+      {/* 이름 */}
+      <p className={`font-bold text-foreground ${rank === 1 ? 'text-sm' : 'text-xs'}`}>
+        {member.name}
+      </p>
+
+      {/* XP */}
+      <div className="flex items-center gap-0.5 text-primary-600 text-xs">
+        <Zap className="w-3 h-3" />
+        <span className="font-semibold">{member.weeklyXp}</span>
+      </div>
+
+      {/* 포디움 */}
+      <div className={`${getPodiumHeight(rank)} w-16 mt-2 rounded-t-lg bg-gradient-to-br ${getMedalColor(rank)} flex items-center justify-center`}>
+        <span className="text-white font-bold">{rank}</span>
+      </div>
+    </motion.div>
   );
 }
