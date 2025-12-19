@@ -10,6 +10,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
+      devOptions: {
+        enabled: false
+      },
       manifest: {
         name: 'SpeakFlow - 영어회화 학습',
         short_name: 'SpeakFlow',
@@ -40,6 +43,8 @@ export default defineConfig({
         ]
       },
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
