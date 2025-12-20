@@ -25,18 +25,18 @@ import {
   Timer,
   AlertCircle,
 } from 'lucide-react';
-import { useLearningStore, useFamilyStore, TRACKS, useLanguageStore, useAuthStore } from '@/stores';
-import { useChatHistoryStore, type LeagueTier } from '@/stores/chatHistoryStore';
+import { useLearningStore, useFamilyStore, TRACKS, useLanguageStore, useAuthStore, useLeagueStore } from '@/stores';
+import { useChatHistoryStore } from '@/stores/chatHistoryStore';
 import { Avatar } from '@/components/common';
 import { LANGUAGES, type LearningLanguage } from '@/types';
 
-// 리그 티어 정보
-const LEAGUE_INFO: Record<LeagueTier, { name: string; icon: string; color: string }> = {
-  bronze: { name: '브론즈', icon: '🥉', color: 'from-orange-500 to-orange-700' },
-  silver: { name: '실버', icon: '🥈', color: 'from-gray-400 to-gray-600' },
-  gold: { name: '골드', icon: '🥇', color: 'from-yellow-500 to-amber-600' },
-  platinum: { name: '플래티넘', icon: '💎', color: 'from-cyan-400 to-teal-600' },
-  diamond: { name: '다이아몬드', icon: '👑', color: 'from-purple-500 to-indigo-700' },
+// 리그 티어 색상 매핑
+const LEAGUE_COLORS: Record<string, string> = {
+  bronze: 'from-orange-500 to-orange-700',
+  silver: 'from-gray-400 to-gray-600',
+  gold: 'from-yellow-500 to-amber-600',
+  platinum: 'from-cyan-400 to-teal-600',
+  diamond: 'from-purple-500 to-indigo-700',
 };
 
 export default function HomePage() {
@@ -46,6 +46,14 @@ export default function HomePage() {
   const { currentLanguage, setLanguage } = useLanguageStore();
   const { user } = useAuthStore();
   const { gamification, getRecentSessions, currentLevel, initDailyQuests, claimQuestReward } = useChatHistoryStore();
+  const {
+    currentLeague,
+    weeklyXP,
+    weeklyLeague,
+    initializeWeeklyLeague,
+    getMyRank,
+    getTierInfo,
+  } = useLeagueStore();
   const [showFamilySelector, setShowFamilySelector] = useState(false);
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
 
@@ -71,13 +79,17 @@ export default function HomePage() {
     }
   }, [currentMember, currentTrack?.id, setCurrentTrack]);
 
-  // 일일 퀘스트 초기화
+  // 일일 퀘스트 초기화 & 리그 초기화
   useEffect(() => {
     initDailyQuests();
-  }, [initDailyQuests]);
+    if (!weeklyLeague) {
+      initializeWeeklyLeague();
+    }
+  }, [initDailyQuests, weeklyLeague, initializeWeeklyLeague]);
 
   // 리그 정보
-  const leagueInfo = LEAGUE_INFO[gamification.league.tier];
+  const tierInfo = getTierInfo(currentLeague);
+  const myRank = getMyRank();
 
   // 현재 가족 구성원 데이터 사용
   const displayName = user?.name || currentMember?.name || '학습자';
@@ -251,19 +263,19 @@ export default function HomePage() {
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           onClick={() => navigate('/leaderboard')}
-          className={`w-full bg-gradient-to-r ${leagueInfo.color} rounded-2xl p-4 text-white mb-6 text-left relative overflow-hidden`}
+          className={`w-full bg-gradient-to-r ${LEAGUE_COLORS[currentLeague]} rounded-2xl p-4 text-white mb-6 text-left relative overflow-hidden`}
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
           <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="text-3xl">{leagueInfo.icon}</div>
+              <div className="text-3xl">{tierInfo.icon}</div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-lg">{leagueInfo.name} 리그</span>
+                  <span className="font-bold text-lg">{tierInfo.nameKo} 리그</span>
                   <Shield className="w-4 h-4 opacity-60" />
                 </div>
                 <p className="text-sm opacity-80">
-                  {gamification.league.rank}위 · 이번 주 {gamification.league.weeklyXp} XP
+                  {myRank}위 · 이번 주 {weeklyXP} XP
                 </p>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy,
   Crown,
@@ -12,73 +12,57 @@ import {
   Shield,
   Users,
   Gem,
-  Snowflake,
+  Clock,
+  Star,
   ChevronRight,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
-import { useFamilyStore, useGamificationStore, TRACKS } from '@/stores';
-import { useChatHistoryStore, type LeagueTier, type LeaderboardUser } from '@/stores/chatHistoryStore';
+import { useFamilyStore, useGamificationStore, TRACKS, useLeagueStore, LEAGUE_TIERS } from '@/stores';
+import type { LeaderboardUser } from '@/stores';
 import { Avatar } from '@/components/common';
 
 type LeaderboardTab = 'league' | 'family';
-
-// 리그 티어 정보
-const LEAGUE_INFO: Record<LeagueTier, { name: string; icon: string; color: string; bgGradient: string; textColor: string }> = {
-  bronze: {
-    name: '브론즈',
-    icon: '🥉',
-    color: 'from-orange-600 to-orange-800',
-    bgGradient: 'from-orange-100 to-orange-200',
-    textColor: 'text-orange-700',
-  },
-  silver: {
-    name: '실버',
-    icon: '🥈',
-    color: 'from-gray-400 to-gray-600',
-    bgGradient: 'from-gray-100 to-gray-200',
-    textColor: 'text-gray-600',
-  },
-  gold: {
-    name: '골드',
-    icon: '🥇',
-    color: 'from-yellow-500 to-amber-600',
-    bgGradient: 'from-yellow-100 to-amber-200',
-    textColor: 'text-amber-700',
-  },
-  platinum: {
-    name: '플래티넘',
-    icon: '💎',
-    color: 'from-cyan-400 to-teal-600',
-    bgGradient: 'from-cyan-100 to-teal-200',
-    textColor: 'text-teal-700',
-  },
-  diamond: {
-    name: '다이아몬드',
-    icon: '👑',
-    color: 'from-purple-500 to-indigo-700',
-    bgGradient: 'from-purple-100 to-indigo-200',
-    textColor: 'text-indigo-700',
-  },
-};
 
 export default function LeaderboardPage() {
   const navigate = useNavigate();
   const { members, currentMemberId } = useFamilyStore();
   const { memberData, initMemberData } = useGamificationStore();
-  const { gamification, getLeaderboard, initDailyQuests } = useChatHistoryStore();
+  const {
+    currentLeague,
+    weeklyXP,
+    gems,
+    weeklyLeague,
+    initializeWeeklyLeague,
+    getLeaderboard,
+    getMyRank,
+    getTierInfo,
+    getPromotionStatus,
+    getDaysUntilWeekEnd,
+  } = useLeagueStore();
+
   const [activeTab, setActiveTab] = useState<LeaderboardTab>('league');
+  const [showTierInfo, setShowTierInfo] = useState(false);
 
   // 초기화
   useEffect(() => {
     members.forEach((member) => {
       initMemberData(member.id);
     });
-    initDailyQuests();
-  }, [members, initMemberData, initDailyQuests]);
+    if (!weeklyLeague) {
+      initializeWeeklyLeague();
+    }
+  }, [members, initMemberData, weeklyLeague, initializeWeeklyLeague]);
 
-  // 리그 리더보드 데이터
-  const leagueLeaderboard = getLeaderboard();
-  const currentUserLeague = leagueLeaderboard.find(u => u.isCurrentUser);
-  const leagueInfo = LEAGUE_INFO[gamification.league.tier];
+  const leaderboard = getLeaderboard();
+  const myRank = getMyRank();
+  const tierInfo = getTierInfo(currentLeague);
+  const promotionStatus = getPromotionStatus();
+  const daysLeft = getDaysUntilWeekEnd();
+
+  // 승급/강등 존 계산
+  const promotionZone = weeklyLeague?.promotionZone || 3;
+  const demotionZone = weeklyLeague?.demotionZone || leaderboard.length - 2;
 
   // 가족 랭킹 데이터
   const getFamilyRankingData = () => {
@@ -107,17 +91,15 @@ export default function LeaderboardPage() {
 
   const familyRankingData = getFamilyRankingData();
 
-  // 주 남은 일수 계산
-  const getDaysLeftInWeek = () => {
-    const now = new Date();
-    const day = now.getDay();
-    return day === 0 ? 0 : 7 - day;
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* 헤더 */}
-      <header className={`bg-gradient-to-r ${leagueInfo.color} text-white`}>
+      <header
+        className="text-white"
+        style={{
+          background: `linear-gradient(135deg, ${tierInfo.color} 0%, ${tierInfo.color}dd 100%)`,
+        }}
+      >
         <div className="px-4 py-4">
           <div className="flex items-center gap-3 mb-4">
             <button
@@ -132,64 +114,74 @@ export default function LeaderboardPage() {
                 리더보드
               </h1>
               <p className="text-white/80 text-xs">
-                {activeTab === 'league' ? `${leagueInfo.name} 리그` : '가족 랭킹'}
+                {activeTab === 'league' ? `${tierInfo.nameKo} 리그` : '가족 랭킹'}
               </p>
             </div>
 
-            {/* 젬 & 프리즈 */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-white/20 px-2.5 py-1.5 rounded-full">
-                <Gem className="w-4 h-4 text-cyan-300" />
-                <span className="text-sm font-bold">{gamification.gems}</span>
-              </div>
-              <div className="flex items-center gap-1 bg-white/20 px-2.5 py-1.5 rounded-full">
-                <Snowflake className="w-4 h-4 text-blue-200" />
-                <span className="text-sm font-bold">{gamification.streak.freezeCount}</span>
-              </div>
+            {/* 젬 */}
+            <div className="flex items-center gap-1 bg-white/20 px-2.5 py-1.5 rounded-full">
+              <Gem className="w-4 h-4 text-cyan-300" />
+              <span className="text-sm font-bold">{gems}</span>
             </div>
           </div>
 
           {/* 리그 정보 카드 */}
           {activeTab === 'league' && (
-            <div className="bg-white/10 backdrop-blur rounded-xl p-4 mb-4">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white/10 backdrop-blur rounded-xl p-4 mb-4"
+            >
               <div className="flex items-center gap-4">
-                <div className="text-4xl">{leagueInfo.icon}</div>
+                <button
+                  onClick={() => setShowTierInfo(true)}
+                  className="text-5xl hover:scale-110 transition-transform"
+                >
+                  {tierInfo.icon}
+                </button>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xl font-bold">{leagueInfo.name} 리그</span>
-                    {gamification.league.promoted && (
+                    <span className="text-xl font-bold">{tierInfo.nameKo} 리그</span>
+                    {promotionStatus === 'promotion' && (
                       <span className="text-xs bg-green-400/30 text-green-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3" /> 승급!
+                        <TrendingUp className="w-3 h-3" /> 승급권
                       </span>
                     )}
-                    {gamification.league.relegated && (
+                    {promotionStatus === 'demotion' && (
                       <span className="text-xs bg-red-400/30 text-red-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <TrendingDown className="w-3 h-3" /> 강등
+                        <TrendingDown className="w-3 h-3" /> 강등권
                       </span>
                     )}
                   </div>
-                  <p className="text-white/70 text-sm">
-                    현재 {currentUserLeague?.rank || gamification.league.rank}위 · {gamification.league.weeklyXp} XP
-                  </p>
+                  <div className="flex items-center gap-3 mt-1 text-white/80">
+                    <span className="text-sm">현재 {myRank}위</span>
+                    <span className="text-sm">·</span>
+                    <span className="text-sm flex items-center gap-1">
+                      <Zap className="w-3 h-3" /> {weeklyXP} XP
+                    </span>
+                  </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold">{getDaysLeftInWeek()}</p>
-                  <p className="text-xs text-white/70">일 남음</p>
+                  <div className="flex items-center gap-1 text-white/80">
+                    <Clock className="w-4 h-4" />
+                    <span className="text-2xl font-bold">{daysLeft}</span>
+                  </div>
+                  <p className="text-xs text-white/60">일 남음</p>
                 </div>
               </div>
 
               {/* 승급/강등 안내 */}
               <div className="mt-3 pt-3 border-t border-white/20 grid grid-cols-2 gap-2 text-xs">
                 <div className="flex items-center gap-2 text-green-200">
-                  <TrendingUp className="w-3 h-3" />
-                  <span>상위 10% (1~5위) 승급</span>
+                  <ArrowUp className="w-3 h-3" />
+                  <span>상위 10% (1~{promotionZone}위) 승급</span>
                 </div>
                 <div className="flex items-center gap-2 text-red-200">
-                  <TrendingDown className="w-3 h-3" />
-                  <span>하위 10% (46~50위) 강등</span>
+                  <ArrowDown className="w-3 h-3" />
+                  <span>하위 10% ({demotionZone}위~) 강등</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* 탭 */}
@@ -227,10 +219,10 @@ export default function LeaderboardPage() {
           <div className="mb-3">
             <div className="flex items-center gap-2 text-green-600 text-xs font-medium mb-2 px-2">
               <TrendingUp className="w-3 h-3" />
-              승급 존
+              승급 존 (상위 10%)
             </div>
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 overflow-hidden">
-              {leagueLeaderboard.slice(0, 5).map((user, index) => (
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 overflow-hidden">
+              {leaderboard.slice(0, promotionZone).map((user, index) => (
                 <LeagueUserRow
                   key={user.id}
                   user={user}
@@ -247,12 +239,12 @@ export default function LeaderboardPage() {
               <Shield className="w-3 h-3" />
               안전 존
             </div>
-            <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-              {leagueLeaderboard.slice(5, 45).map((user, index) => (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              {leaderboard.slice(promotionZone, demotionZone - 1).map((user, index) => (
                 <LeagueUserRow
                   key={user.id}
                   user={user}
-                  rank={index + 6}
+                  rank={index + promotionZone + 1}
                   zone="safe"
                 />
               ))}
@@ -260,18 +252,18 @@ export default function LeaderboardPage() {
           </div>
 
           {/* 강등 존 */}
-          {leagueLeaderboard.length > 45 && (
+          {demotionZone <= leaderboard.length && (
             <div>
               <div className="flex items-center gap-2 text-red-600 text-xs font-medium mb-2 px-2">
                 <TrendingDown className="w-3 h-3" />
-                강등 위험 존
+                강등 위험 존 (하위 10%)
               </div>
-              <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-100 overflow-hidden">
-                {leagueLeaderboard.slice(45).map((user, index) => (
+              <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-200 overflow-hidden">
+                {leaderboard.slice(demotionZone - 1).map((user, index) => (
                   <LeagueUserRow
                     key={user.id}
                     user={user}
-                    rank={index + 46}
+                    rank={index + demotionZone}
                     zone="relegation"
                   />
                 ))}
@@ -298,8 +290,8 @@ export default function LeaderboardPage() {
 
           {/* 나머지 */}
           <div className="space-y-2">
-            {familyRankingData.slice(3).map((member, index) => {
-              const rank = index + 4;
+            {familyRankingData.slice(familyRankingData.length >= 3 ? 3 : 0).map((member, index) => {
+              const rank = familyRankingData.length >= 3 ? index + 4 : index + 1;
               const isCurrentUser = member.id === currentMemberId;
               const track = TRACKS.find((t) => t.id === member.trackId);
 
@@ -373,6 +365,84 @@ export default function LeaderboardPage() {
           )}
         </div>
       )}
+
+      {/* 티어 정보 모달 */}
+      <AnimatePresence>
+        {showTierInfo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-end"
+            onClick={() => setShowTierInfo(false)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              className="w-full bg-white rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-foreground mb-4 text-center">리그 시스템</h3>
+              <div className="space-y-3">
+                {LEAGUE_TIERS.map((tier) => (
+                  <div
+                    key={tier.id}
+                    className={`p-4 rounded-xl border-2 ${
+                      currentLeague === tier.id
+                        ? 'border-primary-500 bg-primary-50'
+                        : 'border-gray-100'
+                    }`}
+                    style={{ backgroundColor: currentLeague === tier.id ? tier.bgColor : undefined }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">{tier.icon}</span>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-foreground">{tier.nameKo}</h4>
+                          {currentLeague === tier.id && (
+                            <span className="text-xs bg-primary-500 text-white px-2 py-0.5 rounded-full">
+                              현재
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500">
+                          {tier.minXP}+ XP 필요
+                        </p>
+                      </div>
+                      <div className="text-right text-xs text-gray-400">
+                        {tier.promotionTop > 0 && <p>상위 {tier.promotionTop}% 승급</p>}
+                        {tier.demotionBottom > 0 && <p>하위 {tier.demotionBottom}% 강등</p>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 보상 안내 */}
+              <div className="mt-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl">
+                <h4 className="font-bold text-foreground mb-2 flex items-center gap-2">
+                  <Star className="w-4 h-4 text-yellow-500" />
+                  승급 보상
+                </h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• 브론즈 → 실버: 50젬 + 100 XP</li>
+                  <li>• 실버 → 골드: 100젬 + 200 XP</li>
+                  <li>• 골드 → 플래티넘: 150젬 + 300 XP</li>
+                  <li>• 플래티넘 → 다이아: 200젬 + 400 XP</li>
+                </ul>
+              </div>
+
+              <button
+                onClick={() => setShowTierInfo(false)}
+                className="w-full mt-4 py-3 text-gray-500 font-medium"
+              >
+                닫기
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -381,7 +451,7 @@ export default function LeaderboardPage() {
 function LeagueUserRow({
   user,
   rank,
-  zone
+  zone,
 }: {
   user: LeaderboardUser;
   rank: number;
@@ -391,7 +461,7 @@ function LeagueUserRow({
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: rank * 0.02 }}
+      transition={{ delay: Math.min(rank * 0.02, 0.5) }}
       className={`flex items-center gap-3 p-3 border-b last:border-b-0 ${
         user.isCurrentUser
           ? zone === 'promotion'
@@ -401,19 +471,29 @@ function LeagueUserRow({
             : 'bg-primary-50'
           : ''
       } ${
-        zone === 'promotion' ? 'border-green-100' :
-        zone === 'relegation' ? 'border-red-100' : 'border-gray-100'
+        zone === 'promotion'
+          ? 'border-green-100'
+          : zone === 'relegation'
+          ? 'border-red-100'
+          : 'border-gray-100'
       }`}
     >
       {/* 순위 */}
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-        rank === 1 ? 'bg-yellow-400 text-white' :
-        rank === 2 ? 'bg-gray-400 text-white' :
-        rank === 3 ? 'bg-orange-400 text-white' :
-        zone === 'promotion' ? 'bg-green-200 text-green-700' :
-        zone === 'relegation' ? 'bg-red-200 text-red-700' :
-        'bg-gray-100 text-gray-600'
-      }`}>
+      <div
+        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+          rank === 1
+            ? 'bg-yellow-400 text-white'
+            : rank === 2
+            ? 'bg-gray-400 text-white'
+            : rank === 3
+            ? 'bg-orange-400 text-white'
+            : zone === 'promotion'
+            ? 'bg-green-200 text-green-700'
+            : zone === 'relegation'
+            ? 'bg-red-200 text-red-700'
+            : 'bg-gray-100 text-gray-600'
+        }`}
+      >
         {rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : rank}
       </div>
 
@@ -430,12 +510,18 @@ function LeagueUserRow({
             <span className="text-xs bg-primary-500 text-white px-1.5 py-0.5 rounded">나</span>
           )}
         </div>
+        <div className="flex items-center gap-2 text-xs text-gray-400">
+          <span className="flex items-center gap-0.5">
+            <Flame className="w-3 h-3 text-orange-400" />
+            {user.streak}일
+          </span>
+        </div>
       </div>
 
       {/* XP */}
       <div className="flex items-center gap-1 text-primary-600">
         <Zap className="w-4 h-4" />
-        <span className="font-bold">{user.weeklyXp}</span>
+        <span className="font-bold">{user.weeklyXP}</span>
         <span className="text-xs text-gray-400">XP</span>
       </div>
     </motion.div>
@@ -446,19 +532,27 @@ function LeagueUserRow({
 function FamilyPodiumItem({ member, rank }: { member: any; rank: number }) {
   const getMedalColor = (r: number) => {
     switch (r) {
-      case 1: return 'from-yellow-400 to-amber-500';
-      case 2: return 'from-gray-300 to-gray-400';
-      case 3: return 'from-orange-400 to-orange-500';
-      default: return 'from-gray-200 to-gray-300';
+      case 1:
+        return 'from-yellow-400 to-amber-500';
+      case 2:
+        return 'from-gray-300 to-gray-400';
+      case 3:
+        return 'from-orange-400 to-orange-500';
+      default:
+        return 'from-gray-200 to-gray-300';
     }
   };
 
   const getPodiumHeight = (r: number) => {
     switch (r) {
-      case 1: return 'h-24';
-      case 2: return 'h-16';
-      case 3: return 'h-12';
-      default: return 'h-10';
+      case 1:
+        return 'h-24';
+      case 2:
+        return 'h-16';
+      case 3:
+        return 'h-12';
+      default:
+        return 'h-10';
     }
   };
 
@@ -489,7 +583,11 @@ function FamilyPodiumItem({ member, rank }: { member: any; rank: number }) {
             className="ring-2 ring-white"
           />
         </div>
-        <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br ${getMedalColor(rank)}`}>
+        <div
+          className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br ${getMedalColor(
+            rank
+          )}`}
+        >
           {rank}
         </div>
       </div>
@@ -506,7 +604,13 @@ function FamilyPodiumItem({ member, rank }: { member: any; rank: number }) {
       </div>
 
       {/* 포디움 */}
-      <div className={`${getPodiumHeight(rank)} w-16 mt-2 rounded-t-lg bg-gradient-to-br ${getMedalColor(rank)} flex items-center justify-center`}>
+      <div
+        className={`${getPodiumHeight(
+          rank
+        )} w-16 mt-2 rounded-t-lg bg-gradient-to-br ${getMedalColor(
+          rank
+        )} flex items-center justify-center`}
+      >
         <span className="text-white font-bold">{rank}</span>
       </div>
     </motion.div>
